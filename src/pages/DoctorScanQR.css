@@ -1,0 +1,63 @@
+.scan-container{
+
+    min-height:100vh;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    background:#eef3f8;
+
+}
+
+.scan-box{
+
+    width:700px;
+
+    background:white;
+
+    padding:30px;
+
+    border-radius:15px;
+
+    text-align:center;
+
+    box-shadow:0 5px 20px rgba(0,0,0,.2);
+
+}
+
+.scan-box h2{
+
+    color:#1565c0;
+
+    margin-bottom:10px;
+
+}
+
+.scan-box p{
+
+    color:#555;
+
+    margin-bottom:20px;
+
+}
+
+#reader{
+
+    width:500px;
+
+    margin:auto;
+
+}
+
+.scan-box a{
+
+    text-decoration:none;
+
+    font-weight:bold;
+
+    color:#1565c0;
+
+}

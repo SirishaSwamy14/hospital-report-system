@@ -1,0 +1,110 @@
+.patient-report-container{
+
+    width:90%;
+
+    margin:30px auto;
+
+}
+
+.patient-card{
+
+    background:white;
+
+    padding:20px;
+
+    border-radius:10px;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.2);
+
+    margin-bottom:30px;
+
+}
+
+.patient-card p{
+
+    margin:10px 0;
+
+    font-size:17px;
+
+}
+
+.report-card{
+
+    background:white;
+
+    padding:20px;
+
+    border-radius:10px;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.2);
+
+}
+
+.report-card table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+.report-card th,
+.report-card td{
+
+    border:1px solid #ddd;
+
+    padding:12px;
+
+    text-align:center;
+
+}
+
+.report-card th{
+
+    background:#1976d2;
+
+    color:white;
+
+}
+
+.report-card button{
+
+    padding:8px 18px;
+
+    border:none;
+
+    background:#1976d2;
+
+    color:white;
+
+    border-radius:6px;
+
+    cursor:pointer;
+
+}
+
+.buttons{
+
+    margin-top:25px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+}
+
+.buttons button{
+
+    padding:12px 25px;
+
+    border:none;
+
+    background:#2e7d32;
+
+    color:white;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+}
