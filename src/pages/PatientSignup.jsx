@@ -30,33 +30,33 @@ export default function PatientSignup() {
 
     };
 
-    const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
 
-        e.preventDefault();
+    e.preventDefault();
 
-        try {
+    try {
 
-            const response = await axios.post(
-                "http://localhost:5000/patient/register",
-                formData
-            );
+        const response = await axios.post(
+            "https://hospital-report-system-xdai.onrender.com/patient/register",
+            formData
+        );
 
-            alert(response.data.message);
+        alert(response.data.message);
 
-            navigate("/patient-login");
+        navigate("/patient-login");
 
-        } catch (error) {
+    } catch (error) {
 
-            console.log(error);
+        console.log(error);
 
-            alert(
-                error.response?.data?.message ||
-                "Registration Failed"
-            );
+        alert(
+            error.response?.data?.message ||
+            "Registration Failed"
+        );
 
-        }
+    }
 
-    };
+};
 
     return (
 

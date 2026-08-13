@@ -65,7 +65,7 @@ export default function UploadReport() {
 
             const res = await axios.post(
 
-                "http://localhost:5000/patient/upload-report",
+                "http://https://hospital-report-system-xdai.onrender.com/patient/upload-report",
 
                 formData,
 

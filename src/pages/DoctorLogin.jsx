@@ -19,7 +19,7 @@ export default function DoctorLogin() {
 
             const res = await axios.post(
 
-                "http://localhost:5000/doctor/login",
+                "http://https://hospital-report-system-xdai.onrender.com/doctor/login",
 
                 {
 

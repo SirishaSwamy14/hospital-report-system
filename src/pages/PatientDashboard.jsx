@@ -31,7 +31,7 @@ export default function PatientDashboard() {
 
             const res = await axios.get(
 
-                `http://localhost:5000/patient/reports/${patient.patientId}`
+                `http://https://hospital-report-system-xdai.onrender.com/patient/reports/${patient.patientId}`
 
             );
 
@@ -228,7 +228,7 @@ export default function PatientDashboard() {
 
                                                     <a
 
-                                                        href={`http://localhost:5000/${report.filePath.replace(/\\/g, "/")}`}
+                                                        href={`http://https://hospital-report-system-xdai.onrender.com/${report.filePath.replace(/\\/g, "/")}`}
 
                                                         target="_blank"
 

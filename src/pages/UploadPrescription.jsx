@@ -41,7 +41,7 @@ export default function UploadPrescription() {
 
             const res = await axios.post(
 
-                "http://localhost:5000/doctor/upload-prescription",
+                "http://https://hospital-report-system-xdai.onrender.com/doctor/upload-prescription",
 
                 formData,
 

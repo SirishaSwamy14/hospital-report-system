@@ -23,7 +23,7 @@ export default function DoctorPatientReports() {
 
             const res = await axios.get(
 
-                `http://localhost:5000/doctor/patient/${patientId}`
+                `http://https://hospital-report-system-xdai.onrender.com/doctor/patient/${patientId}`
 
             );
 
@@ -119,7 +119,7 @@ export default function DoctorPatientReports() {
 
                                             <a
 
-                                                href={`http://localhost:5000/${report.filePath.replace(/\\/g,"/")}`}
+                                                href={`http://https://hospital-report-system-xdai.onrender.com/${report.filePath.replace(/\\/g,"/")}`}
 
                                                 target="_blank"
 

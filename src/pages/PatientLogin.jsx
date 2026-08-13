@@ -17,7 +17,7 @@ export default function PatientLogin() {
         try {
 
             const res = await axios.post(
-                "http://localhost:5000/patient/login",
+                "http://https://hospital-report-system-xdai.onrender.com/patient/login",
                 {
                     email,
                     password
