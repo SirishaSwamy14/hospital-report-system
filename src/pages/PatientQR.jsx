@@ -37,7 +37,7 @@ export default function PatientQR() {
 
                 <img
 
-                    src={`http://https://hospital-report-system-xdai.onrender.com/uploads/qr/${patient.patientId}.png`}
+                    src={`https://hospital-report-system-xdai.onrender.comhospital-report-system-xdai.onrender.com/uploads/qr/${patient.patientId}.png`}
 
                     alt="Patient QR"
 
@@ -47,7 +47,7 @@ export default function PatientQR() {
 
                 <a
 
-                    href={`http://https://hospital-report-system-xdai.onrender.com/uploads/qr/${patient.patientId}.png`}
+                    href={`https://hospital-report-system-xdai.onrender.comhospital-report-system-xdai.onrender.com/uploads/qr/${patient.patientId}.png`}
 
                     download={`${patient.patientId}.png`}
 
