@@ -12,47 +12,44 @@ export default function PatientLogin() {
 
     const handleLogin = async (e) => {
 
-        e.preventDefault();
+    e.preventDefault();
 
-        try {
+    try {
 
-            const res = await axios.post(
-                "https://hospital-report-system-xdai.onrender.comhospital-report-system-xdai.onrender.com/patient/login",
-                {
-                    email,
-                    password
-                }
-            );
+        const res = await axios.post(
+            "https://hospital-report-system-xdai.onrender.com/patient/login",
+            {
+                email,
+                password
+            }
+        );
 
-            localStorage.setItem(
-                "patient",
-                JSON.stringify(res.data.patient)
-            );
+        localStorage.setItem(
+            "patient",
+            JSON.stringify(res.data.patient)
+        );
 
-            localStorage.setItem(
-                "token",
-                res.data.token
-            );
+        localStorage.setItem(
+            "token",
+            res.data.token
+        );
 
-            alert("Login Successful");
+        alert("Login Successful");
 
-            navigate("/patient-dashboard");
+        navigate("/patient-dashboard");
 
-        }
+    } catch (err) {
 
-        catch (err) {
+        console.log(err);
 
-            console.log(err);
+        alert(
+            err.response?.data?.message ||
+            "Invalid Email or Password"
+        );
 
-            alert(
-                err.response?.data?.message ||
-                "Invalid Email or Password"
-            );
+    }
 
-        }
-
-    };
-
+};
     return (
 
         <div className="login-container">
