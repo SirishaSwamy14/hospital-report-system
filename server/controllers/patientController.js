@@ -1,229 +1,222 @@
 const Patient = require("../models/Patient");
 const Report = require("../models/Report");
 
-const bcrypt = require("bcrypt");
-const QRCode = require("qrcode");
-const jwt = require("jsonwebtoken");
 
-const fs = require("fs");
-const path = require("path");
-
-
-// ================= REGISTER PATIENT =================
-
-const registerPatient = async (req, res) => {
-    try {
-        const {
-            name,
-            email,
-            password,
-            age,
-            gender,
-            bloodGroup,
-            phone,
-            address
-        } = req.body;
-
-        // Normalize email
-        const normalizedEmail = email.trim().toLowerCase();
-
-        // Check existing patient
-        const existingPatient = await Patient.findOne({
-            email: normalizedEmail
-        });
-
-        if (existingPatient) {
-            return res.status(400).json({
-                message: "Email already registered"
-            });
-        }
-
-        // Generate Patient ID
-        const totalPatients = await Patient.countDocuments();
-        const patientId = "PAT" + (1001 + totalPatients);
-
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // QR folder
-        const qrFolder = path.join(__dirname, "../uploads/qr");
-
-        if (!fs.existsSync(qrFolder)) {
-            fs.mkdirSync(qrFolder, {
-                recursive: true
-            });
-        }
-
-        // QR file
-        const qrPath = path.join(
-            qrFolder,
-            `${patientId}.png`
-        );
-
-        await QRCode.toFile(
-            qrPath,
-            patientId
-        );
-
-        // Create patient
-        const patient = new Patient({
-            patientId,
-            name,
-            email: normalizedEmail,
-            password: hashedPassword,
-            age,
-            gender,
-            bloodGroup,
-            phone,
-            address,
-            qrCode: qrPath
-        });
-
-        await patient.save();
-
-        res.status(201).json({
-            success: true,
-            message: "Patient Registered Successfully",
-            patient
-        });
-
-    } catch (err) {
-        console.error("REGISTER ERROR:", err);
-
-        res.status(500).json({
-            message: "Server Error"
-        });
-    }
-};
-
-
-// ================= LOGIN PATIENT =================
-
-const loginPatient = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        const normalizedEmail = email.trim().toLowerCase();
-
-        console.log("LOGIN EMAIL:", normalizedEmail);
-
-        const patient = await Patient.findOne({
-            email: normalizedEmail
-        });
-
-        if (!patient) {
-            console.log("PATIENT NOT FOUND");
-            return res.status(404).json({
-                message: "Patient Not Found"
-            });
-        }
-
-        console.log("PATIENT FOUND:", patient.email);
-
-        const checkPassword = await bcrypt.compare(
-            password,
-            patient.password
-        );
-
-        console.log("PASSWORD MATCH:", checkPassword);
-
-        if (!checkPassword) {
-            return res.status(400).json({
-                message: "Invalid Password"
-            });
-        }
-
-        const token = jwt.sign(
-            {
-                patientId: patient.patientId,
-                email: patient.email
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: "1d"
-            }
-        );
-
-        res.json({
-            success: true,
-            token,
-            patient
-        });
-
-    } catch (err) {
-        console.log("LOGIN ERROR:", err);
-
-        res.status(500).json({
-            message: "Server Error"
-        });
-    }
-};
-
-// ================= UPLOAD REPORT =================
+// =====================================================
+// UPLOAD MEDICAL REPORT
+// =====================================================
 
 const uploadReport = async (req, res) => {
+
     try {
+
+        console.log("========== UPLOAD REPORT ==========");
+
+        console.log("BODY:", req.body);
+        console.log("FILE:", req.file);
+
+
+        // -----------------------------------------------
+        // CHECK FILE
+        // -----------------------------------------------
+
+        if (!req.file) {
+
+            return res.status(400).json({
+                success: false,
+                message: "No report file was uploaded"
+            });
+
+        }
+
+
+        // -----------------------------------------------
+        // GET FORM DATA
+        // -----------------------------------------------
+
         const {
             patientId,
             reportName,
             reportType
         } = req.body;
 
-        if (!req.file) {
+
+        // -----------------------------------------------
+        // VALIDATE DATA
+        // -----------------------------------------------
+
+        if (!patientId) {
+
             return res.status(400).json({
-                message: "No File Uploaded"
+                success: false,
+                message: "Patient ID is required"
             });
+
         }
 
-        const report = new Report({
-            patientId,
-            reportName,
-            reportType,
-            fileName: req.file.filename,
-            filePath: req.file.path
+
+        if (!reportName) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Report name is required"
+            });
+
+        }
+
+
+        if (!reportType) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Report type is required"
+            });
+
+        }
+
+
+        // -----------------------------------------------
+        // CHECK PATIENT
+        // -----------------------------------------------
+
+        const patient = await Patient.findOne({
+            patientId: patientId
         });
+
+
+        if (!patient) {
+
+            return res.status(404).json({
+                success: false,
+                message: "Patient not found"
+            });
+
+        }
+
+
+        // -----------------------------------------------
+        // CREATE REPORT
+        // -----------------------------------------------
+
+        const report = new Report({
+
+            patientId: patientId,
+
+            reportName: reportName,
+
+            reportType: reportType,
+
+            fileName: req.file.filename,
+
+            filePath: req.file.path
+
+        });
+
+
+        // -----------------------------------------------
+        // SAVE TO MONGODB
+        // -----------------------------------------------
 
         await report.save();
 
-        res.status(201).json({
+
+        console.log("REPORT SAVED:", report);
+
+
+        // -----------------------------------------------
+        // SUCCESS RESPONSE
+        // -----------------------------------------------
+
+        return res.status(201).json({
+
             success: true,
-            message: "Report Uploaded Successfully",
-            report
+
+            message: "Medical report uploaded successfully",
+
+            report: report
+
         });
 
-    } catch (err) {
-        console.error("UPLOAD REPORT ERROR:", err);
-
-        res.status(500).json({
-            message: "Server Error"
-        });
     }
+
+    catch (error) {
+
+        console.error(
+            "UPLOAD REPORT ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: error.message ||
+                     "Failed to upload medical report"
+
+        });
+
+    }
+
 };
 
 
-// ================= GET PATIENT REPORTS =================
+
+// =====================================================
+// GET PATIENT REPORTS
+// =====================================================
 
 const getPatientReports = async (req, res) => {
+
     try {
-        const patientId = req.params.patientId;
+
+        const { patientId } = req.params;
+
+
+        console.log(
+            "GET REPORTS FOR PATIENT:",
+            patientId
+        );
+
 
         const reports = await Report.find({
-            patientId
+            patientId: patientId
+        }).sort({
+            uploadedAt: -1
         });
 
-        res.status(200).json(reports);
 
-    } catch (err) {
-        console.error("GET REPORTS ERROR:", err);
+        return res.status(200).json({
 
-        res.status(500).json({
-            message: "Server Error"
+            success: true,
+
+            reports: reports
+
         });
+
     }
+
+    catch (error) {
+
+        console.error(
+            "GET REPORTS ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: error.message ||
+                     "Failed to fetch reports"
+
+        });
+
+    }
+
 };
 
-
-// ================= EXPORTS =================
 
 module.exports = {
     registerPatient,

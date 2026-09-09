@@ -7,68 +7,203 @@ export default function UploadReport() {
 
     const navigate = useNavigate();
 
-    const patient = JSON.parse(localStorage.getItem("patient"));
+    const patient =
+        JSON.parse(localStorage.getItem("patient"));
 
     const [reportName, setReportName] = useState("");
 
-    const [reportType, setReportType] = useState("Blood Test");
+    const [reportType, setReportType] =
+        useState("Blood Test");
 
     const [file, setFile] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
 
-    if (!file) {
-        alert("Please select a report");
-        return;
-    }
+        e.preventDefault();
 
-    const formData = new FormData();
 
-    formData.append("patientId", patient.patientId);
-    formData.append("reportName", reportName);
-    formData.append("reportType", reportType);
-    formData.append("report", file);
+        // ---------------------------------------------
+        // CHECK LOGIN
+        // ---------------------------------------------
 
-    try {
-        const res = await axios.post(
-            "https://hospital-report-system-xdai.onrender.com/patient/upload-report",
-            formData,
-            {
-                headers: {
-                    "Content-Type": "multipart/form-data"
-                }
-            }
+        if (!patient) {
+
+            alert("Please login first");
+
+            navigate("/patient-login");
+
+            return;
+
+        }
+
+
+        // ---------------------------------------------
+        // CHECK FILE
+        // ---------------------------------------------
+
+        if (!file) {
+
+            alert("Please select a medical report");
+
+            return;
+
+        }
+
+
+        // ---------------------------------------------
+        // CREATE FORMDATA
+        // ---------------------------------------------
+
+        const formData = new FormData();
+
+
+        formData.append(
+            "patientId",
+            patient.patientId
         );
 
-        alert(res.data.message);
-        navigate("/my-reports");
 
-    } catch (err) {
-        console.log("Upload Error:", err);
+        formData.append(
+            "reportName",
+            reportName
+        );
 
-        if (err.response) {
-            alert(err.response.data.message || "Upload Failed");
-        } else {
-            alert("Unable to connect to server");
+
+        formData.append(
+            "reportType",
+            reportType
+        );
+
+
+        formData.append(
+            "report",
+            file
+        );
+
+
+        // ---------------------------------------------
+        // UPLOAD
+        // ---------------------------------------------
+
+        try {
+
+            console.log(
+                "Uploading report..."
+            );
+
+
+            const res = await axios.post(
+
+                "https://hospital-report-system-xdai.onrender.com/patient/upload-report",
+
+                formData
+
+            );
+
+
+            console.log(
+                "UPLOAD RESPONSE:",
+                res.data
+            );
+
+
+            if (res.data.success) {
+
+                alert(
+                    "Medical report uploaded successfully"
+                );
+
+
+                // Clear form
+                setReportName("");
+
+                setReportType("Blood Test");
+
+                setFile(null);
+
+
+                // Go to reports
+                navigate("/my-reports");
+
+            }
+
+            else {
+
+                alert(
+                    res.data.message ||
+                    "Upload failed"
+                );
+
+            }
+
         }
-    }
-};
+
+        catch (err) {
+
+            console.error(
+                "UPLOAD ERROR:",
+                err
+            );
+
+
+            if (err.response) {
+
+                console.error(
+                    "STATUS:",
+                    err.response.status
+                );
+
+                console.error(
+                    "DATA:",
+                    err.response.data
+                );
+
+
+                alert(
+
+                    err.response.data?.message ||
+
+                    "Upload failed"
+
+                );
+
+            }
+
+            else {
+
+                alert(
+                    "Unable to connect to server"
+                );
+
+            }
+
+        }
+
+    };
+
+
     return (
 
         <div className="upload-container">
 
             <div className="upload-box">
 
-                <h2>Upload Medical Report</h2>
+                <h2>
+                    Upload Medical Report
+                </h2>
 
-                <form onSubmit={handleSubmit}>
+
+                <form
+                    onSubmit={handleSubmit}
+                >
+
+
+                    {/* REPORT NAME */}
 
                     <label>
-
                         Report Name
-
                     </label>
+
 
                     <input
 
@@ -78,69 +213,69 @@ export default function UploadReport() {
 
                         value={reportName}
 
-                        onChange={(e)=>setReportName(e.target.value)}
+                        onChange={(e) =>
+                            setReportName(
+                                e.target.value
+                            )
+                        }
 
                         required
 
                     />
 
+
+                    {/* REPORT TYPE */}
+
                     <label>
-
                         Report Type
-
                     </label>
+
 
                     <select
 
                         value={reportType}
 
-                        onChange={(e)=>setReportType(e.target.value)}
+                        onChange={(e) =>
+                            setReportType(
+                                e.target.value
+                            )
+                        }
 
                     >
 
-                        <option>
-
+                        <option value="Blood Test">
                             Blood Test
-
                         </option>
 
-                        <option>
-
+                        <option value="X-Ray">
                             X-Ray
-
                         </option>
 
-                        <option>
-
+                        <option value="MRI Scan">
                             MRI Scan
-
                         </option>
 
-                        <option>
-
+                        <option value="CT Scan">
                             CT Scan
-
                         </option>
 
-                        <option>
-
+                        <option value="Prescription">
                             Prescription
-
                         </option>
 
-                        <option>
-
+                        <option value="Other">
                             Other
-
                         </option>
 
                     </select>
 
+
+                    {/* FILE */}
+
                     <label>
-
                         Select Report
-
                     </label>
+
 
                     <input
 
@@ -148,31 +283,38 @@ export default function UploadReport() {
 
                         accept=".pdf,.jpg,.jpeg,.png"
 
-                        onChange={(e)=>setFile(e.target.files[0])}
+                        onChange={(e) =>
+                            setFile(
+                                e.target.files[0]
+                            )
+                        }
 
                         required
 
                     />
 
+
+                    {/* BUTTON */}
+
                     <button
-
                         type="submit"
-
                     >
-
                         Upload Report
-
                     </button>
+
 
                 </form>
 
-                <br/>
+
+                <br />
+
 
                 <Link to="/patient-dashboard">
 
                     ← Back to Dashboard
 
                 </Link>
+
 
             </div>
 
