@@ -5,9 +5,6 @@ const bcrypt = require("bcrypt");
 const QRCode = require("qrcode");
 const jwt = require("jsonwebtoken");
 
-const fs = require("fs");
-const path = require("path");
-
 
 // =====================================================
 // PATIENT REGISTRATION
@@ -29,12 +26,37 @@ const registerPatient = async (req, res) => {
         } = req.body;
 
 
-        // Normalize email
+        // -----------------------------------------------
+        // VALIDATE REQUIRED VALUES
+        // -----------------------------------------------
+
+        if (
+            !name ||
+            !email ||
+            !password
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Name, email and password are required"
+            });
+
+        }
+
+
+        // -----------------------------------------------
+        // NORMALIZE EMAIL
+        // -----------------------------------------------
+
         const normalizedEmail =
             email.trim().toLowerCase();
 
 
-        // Check existing patient
+        // -----------------------------------------------
+        // CHECK EXISTING PATIENT
+        // -----------------------------------------------
+
         const existingPatient =
             await Patient.findOne({
                 email: normalizedEmail
@@ -45,13 +67,17 @@ const registerPatient = async (req, res) => {
 
             return res.status(400).json({
                 success: false,
-                message: "Email already registered"
+                message:
+                    "Email already registered"
             });
 
         }
 
 
-        // Generate patient ID
+        // -----------------------------------------------
+        // GENERATE PATIENT ID
+        // -----------------------------------------------
+
         const totalPatients =
             await Patient.countDocuments();
 
@@ -59,89 +85,73 @@ const registerPatient = async (req, res) => {
             "PAT" + (1001 + totalPatients);
 
 
-        // Hash password
+        // -----------------------------------------------
+        // HASH PASSWORD
+        // -----------------------------------------------
+
         const hashedPassword =
-            await bcrypt.hash(password, 10);
-
-
-        // =================================================
-        // QR CODE FOLDER
-        // =================================================
-
-        const qrFolder = path.join(
-            __dirname,
-            "../uploads/qr"
-        );
-
-
-        if (!fs.existsSync(qrFolder)) {
-
-            fs.mkdirSync(
-                qrFolder,
-                {
-                    recursive: true
-                }
-            );
-
-        }
-
-
-        // QR filename
-        const qrFileName =
-            `${patientId}.png`;
-
-
-        const qrFilePath =
-            path.join(
-                qrFolder,
-                qrFileName
+            await bcrypt.hash(
+                password,
+                10
             );
 
 
-        // Generate QR code
-        await QRCode.toFile(
-            qrFilePath,
+        // -----------------------------------------------
+        // GENERATE QR CODE
+        // -----------------------------------------------
+
+        const qrCode =
+            await QRCode.toDataURL(
+                patientId
+            );
+
+
+        // -----------------------------------------------
+        // CREATE PATIENT
+        // -----------------------------------------------
+
+        const patient =
+            new Patient({
+
+                patientId,
+
+                name: name.trim(),
+
+                email: normalizedEmail,
+
+                password: hashedPassword,
+
+                age,
+
+                gender,
+
+                bloodGroup,
+
+                phone,
+
+                address,
+
+                qrCode
+
+            });
+
+
+        // -----------------------------------------------
+        // SAVE PATIENT
+        // -----------------------------------------------
+
+        await patient.save();
+
+
+        console.log(
+            "PATIENT REGISTERED:",
             patientId
         );
 
 
-        // Browser-accessible QR path
-        const qrCode =
-            `/uploads/qr/${qrFileName}`;
-
-
-        // =================================================
-        // CREATE PATIENT
-        // =================================================
-
-        const patient = new Patient({
-
-            patientId,
-
-            name,
-
-            email: normalizedEmail,
-
-            password: hashedPassword,
-
-            age,
-
-            gender,
-
-            bloodGroup,
-
-            phone,
-
-            address,
-
-            qrCode
-
-        });
-
-
-        // Save patient
-        await patient.save();
-
+        // -----------------------------------------------
+        // RESPONSE
+        // -----------------------------------------------
 
         return res.status(201).json({
 
@@ -193,7 +203,28 @@ const loginPatient = async (req, res) => {
         } = req.body;
 
 
-        // Normalize email
+        // -----------------------------------------------
+        // VALIDATE
+        // -----------------------------------------------
+
+        if (!email || !password) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Email and password are required"
+
+            });
+
+        }
+
+
+        // -----------------------------------------------
+        // NORMALIZE EMAIL
+        // -----------------------------------------------
+
         const normalizedEmail =
             email.trim().toLowerCase();
 
@@ -204,10 +235,16 @@ const loginPatient = async (req, res) => {
         );
 
 
-        // Find patient
+        // -----------------------------------------------
+        // FIND PATIENT
+        // -----------------------------------------------
+
         const patient =
             await Patient.findOne({
-                email: normalizedEmail
+
+                email:
+                    normalizedEmail
+
             });
 
 
@@ -236,8 +273,11 @@ const loginPatient = async (req, res) => {
         );
 
 
-        // Compare password
-        const checkPassword =
+        // -----------------------------------------------
+        // CHECK PASSWORD
+        // -----------------------------------------------
+
+        const passwordMatch =
             await bcrypt.compare(
                 password,
                 patient.password
@@ -246,11 +286,11 @@ const loginPatient = async (req, res) => {
 
         console.log(
             "PASSWORD MATCH:",
-            checkPassword
+            passwordMatch
         );
 
 
-        if (!checkPassword) {
+        if (!passwordMatch) {
 
             return res.status(400).json({
 
@@ -264,7 +304,43 @@ const loginPatient = async (req, res) => {
         }
 
 
-        // Create JWT token
+        // -----------------------------------------------
+        // GENERATE QR FOR OLD PATIENTS
+        // -----------------------------------------------
+
+        if (
+            !patient.qrCode ||
+            !patient.qrCode.startsWith(
+                "data:image/"
+            )
+        ) {
+
+            console.log(
+                "Generating QR for existing patient"
+            );
+
+
+            patient.qrCode =
+                await QRCode.toDataURL(
+                    patient.patientId
+                );
+
+
+            await patient.save();
+
+
+            console.log(
+                "QR CODE UPDATED:",
+                patient.patientId
+            );
+
+        }
+
+
+        // -----------------------------------------------
+        // JWT TOKEN
+        // -----------------------------------------------
+
         const token =
             jwt.sign(
 
@@ -279,11 +355,16 @@ const loginPatient = async (req, res) => {
                 process.env.JWT_SECRET,
 
                 {
-                    expiresIn: "1d"
+                    expiresIn:
+                        "1d"
                 }
 
             );
 
+
+        // -----------------------------------------------
+        // RESPONSE
+        // -----------------------------------------------
 
         return res.json({
 
@@ -343,9 +424,9 @@ const uploadReport = async (req, res) => {
         );
 
 
-        // =================================================
+        // -----------------------------------------------
         // CHECK FILE
-        // =================================================
+        // -----------------------------------------------
 
         if (!req.file) {
 
@@ -361,9 +442,9 @@ const uploadReport = async (req, res) => {
         }
 
 
-        // =================================================
-        // FORM DATA
-        // =================================================
+        // -----------------------------------------------
+        // GET DATA
+        // -----------------------------------------------
 
         const {
             patientId,
@@ -372,9 +453,9 @@ const uploadReport = async (req, res) => {
         } = req.body;
 
 
-        // =================================================
+        // -----------------------------------------------
         // VALIDATION
-        // =================================================
+        // -----------------------------------------------
 
         if (!patientId) {
 
@@ -424,13 +505,16 @@ const uploadReport = async (req, res) => {
         }
 
 
-        // =================================================
+        // -----------------------------------------------
         // CHECK PATIENT
-        // =================================================
+        // -----------------------------------------------
 
         const patient =
             await Patient.findOne({
-                patientId: patientId
+
+                patientId:
+                    patientId
+
             });
 
 
@@ -448,17 +532,17 @@ const uploadReport = async (req, res) => {
         }
 
 
-        // =================================================
+        // -----------------------------------------------
         // PUBLIC FILE PATH
-        // =================================================
+        // -----------------------------------------------
 
         const filePath =
             `/uploads/reports/${req.file.filename}`;
 
 
-        // =================================================
+        // -----------------------------------------------
         // CREATE REPORT
-        // =================================================
+        // -----------------------------------------------
 
         const report =
             new Report({
@@ -481,22 +565,22 @@ const uploadReport = async (req, res) => {
             });
 
 
-        // =================================================
+        // -----------------------------------------------
         // SAVE REPORT
-        // =================================================
+        // -----------------------------------------------
 
         await report.save();
 
 
         console.log(
-            "REPORT SAVED SUCCESSFULLY:",
+            "REPORT SAVED:",
             report._id
         );
 
 
-        // =================================================
+        // -----------------------------------------------
         // RESPONSE
-        // =================================================
+        // -----------------------------------------------
 
         return res.status(201).json({
 
@@ -548,14 +632,17 @@ const getPatientReports = async (req, res) => {
 
 
         console.log(
-            "GET REPORTS FOR PATIENT:",
+            "GET REPORTS FOR:",
             patientId
         );
 
 
         const reports =
             await Report.find({
-                patientId: patientId
+
+                patientId:
+                    patientId
+
             })
             .sort({
                 uploadedAt: -1
@@ -566,7 +653,8 @@ const getPatientReports = async (req, res) => {
 
             success: true,
 
-            reports
+            reports:
+                reports
 
         });
 

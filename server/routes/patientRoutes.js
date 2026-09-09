@@ -14,7 +14,7 @@ const {
 
 
 // =====================================================
-// CREATE UPLOAD FOLDER
+// UPLOAD DIRECTORY
 // =====================================================
 
 const uploadDir = path.join(
@@ -36,7 +36,12 @@ if (!fs.existsSync(uploadDir)) {
 const storage = multer.diskStorage({
 
     destination: function (req, file, cb) {
-        cb(null, uploadDir);
+
+        cb(
+            null,
+            uploadDir
+        );
+
     },
 
     filename: function (req, file, cb) {
@@ -50,7 +55,11 @@ const storage = multer.diskStorage({
         const finalFileName =
             `${Date.now()}-${safeFileName}`;
 
-        cb(null, finalFileName);
+        cb(
+            null,
+            finalFileName
+        );
+
     }
 
 });
@@ -78,8 +87,7 @@ const fileFilter = (req, file, cb) => {
         cb(
             new Error(
                 "Only PDF, JPG, JPEG and PNG files are allowed"
-            ),
-            false
+            )
         );
 
     }
@@ -104,7 +112,7 @@ const upload = multer({
 
 
 // =====================================================
-// PATIENT REGISTRATION
+// REGISTER
 // =====================================================
 
 router.post(
@@ -114,7 +122,7 @@ router.post(
 
 
 // =====================================================
-// PATIENT LOGIN
+// LOGIN
 // =====================================================
 
 router.post(
@@ -124,7 +132,7 @@ router.post(
 
 
 // =====================================================
-// UPLOAD MEDICAL REPORT
+// UPLOAD REPORT
 // =====================================================
 
 router.post(
@@ -135,7 +143,7 @@ router.post(
 
 
 // =====================================================
-// GET PATIENT REPORTS
+// GET REPORTS
 // =====================================================
 
 router.get(
@@ -174,6 +182,7 @@ router.use((err, req, res, next) => {
     }
 
     next();
+
 });
 
 

@@ -5,8 +5,11 @@ const path = require("path");
 
 require("dotenv").config();
 
-const patientRoutes = require("./routes/patientRoutes");
-const doctorRoutes = require("./routes/doctorRoutes");
+const patientRoutes =
+    require("./routes/patientRoutes");
+
+const doctorRoutes =
+    require("./routes/doctorRoutes");
 
 const app = express();
 
@@ -27,13 +30,16 @@ app.use(
 
 
 // =====================================================
-// SERVE UPLOADED FILES
+// SERVE UPLOADED REPORT FILES
 // =====================================================
 
 app.use(
     "/uploads",
     express.static(
-        path.join(__dirname, "uploads")
+        path.join(
+            __dirname,
+            "uploads"
+        )
     )
 );
 
@@ -71,7 +77,9 @@ app.get("/", (req, res) => {
 // =====================================================
 
 mongoose
-    .connect(process.env.MONGO_URL)
+    .connect(
+        process.env.MONGO_URL
+    )
 
     .then(() => {
 
@@ -97,7 +105,6 @@ mongoose
 
 const PORT =
     process.env.PORT || 5000;
-
 
 app.listen(
     PORT,

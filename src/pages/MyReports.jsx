@@ -7,25 +7,43 @@ export default function MyReports() {
 
     const navigate = useNavigate();
 
-    const [reports, setReports] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [reports, setReports] =
+        useState([]);
 
-    const patient = JSON.parse(
-        localStorage.getItem("patient")
-    );
+    const [loading, setLoading] =
+        useState(true);
+
+
+    const patient =
+        JSON.parse(
+            localStorage.getItem("patient")
+        );
+
+
+    const BACKEND_URL =
+        "https://hospital-report-system-xdai.onrender.com";
+
 
     useEffect(() => {
 
-        if (!patient || !patient.patientId) {
+        if (
+            !patient ||
+            !patient.patientId
+        ) {
 
-            navigate("/patient-login");
+            navigate(
+                "/patient-login"
+            );
 
             return;
+
         }
+
 
         fetchReports();
 
     }, []);
+
 
     const fetchReports = async () => {
 
@@ -36,16 +54,24 @@ export default function MyReports() {
                 patient.patientId
             );
 
-            const res = await axios.get(
-                `https://hospital-report-system-xdai.onrender.com/patient/reports/${patient.patientId}`
-            );
+
+            const res =
+                await axios.get(
+
+                    `${BACKEND_URL}/patient/reports/${patient.patientId}`
+
+                );
+
 
             console.log(
-                "Reports Response:",
+                "REPORT RESPONSE:",
                 res.data
             );
 
-            if (res.data.success) {
+
+            if (
+                res.data.success
+            ) {
 
                 setReports(
                     res.data.reports || []
@@ -55,33 +81,24 @@ export default function MyReports() {
 
                 setReports([]);
 
-                alert(
-                    res.data.message ||
-                    "Unable to fetch reports."
-                );
             }
 
-        } catch (err) {
+        }
+
+        catch (error) {
 
             console.error(
                 "FETCH REPORTS ERROR:",
-                err
+                error
             );
 
-            if (err.response) {
 
-                console.error(
-                    "STATUS:",
-                    err.response.status
-                );
-
-                console.error(
-                    "SERVER RESPONSE:",
-                    err.response.data
-                );
+            if (
+                error.response
+            ) {
 
                 alert(
-                    err.response.data?.message ||
+                    error.response.data?.message ||
                     "Unable to fetch reports."
                 );
 
@@ -90,42 +107,64 @@ export default function MyReports() {
                 alert(
                     "Unable to connect to server."
                 );
+
             }
 
-        } finally {
+        }
+
+        finally {
 
             setLoading(false);
+
         }
+
     };
 
 
-    const getReportUrl = (filePath) => {
+    const getReportUrl =
+        (filePath) => {
 
-        if (!filePath) {
-            return "#";
-        }
+            if (!filePath) {
+                return "#";
+            }
 
-        // Convert Windows slashes to normal URL slashes
-        const cleanPath =
-            filePath.replace(/\\/g, "/");
 
-        // If the stored path already begins with /uploads
-        if (cleanPath.startsWith("/uploads")) {
+            const cleanPath =
+                filePath.replace(
+                    /\\/g,
+                    "/"
+                );
 
-            return `https://hospital-report-system-xdai.onrender.com${cleanPath}`;
 
-        }
+            if (
+                cleanPath.startsWith(
+                    "http"
+                )
+            ) {
 
-        // If old records contain uploads/...
-        if (cleanPath.startsWith("uploads/")) {
+                return cleanPath;
 
-            return `https://hospital-report-system-xdai.onrender.com/${cleanPath}`;
+            }
 
-        }
 
-        // Fallback
-        return `https://hospital-report-system-xdai.onrender.com/${cleanPath}`;
-    };
+            if (
+                cleanPath.startsWith(
+                    "/"
+                )
+            ) {
+
+                return (
+                    `${BACKEND_URL}${cleanPath}`
+                );
+
+            }
+
+
+            return (
+                `${BACKEND_URL}/${cleanPath}`
+            );
+
+        };
 
 
     return (
@@ -134,16 +173,36 @@ export default function MyReports() {
 
             <div className="reports-box">
 
-                <h2>
-                    My Medical Reports
-                </h2>
+                <div className="reports-header">
+
+                    <div>
+
+                        <h2>
+                            My Medical Reports
+                        </h2>
+
+                        <p>
+                            View your uploaded medical documents
+                        </p>
+
+                    </div>
+
+
+                    <Link
+                        to="/upload-report"
+                        className="upload-new-btn"
+                    >
+                        + Upload Report
+                    </Link>
+
+                </div>
 
 
                 {loading ? (
 
-                    <p>
+                    <div className="loading-reports">
                         Loading reports...
-                    </p>
+                    </div>
 
                 ) : (
 
@@ -162,6 +221,10 @@ export default function MyReports() {
                                 </th>
 
                                 <th>
+                                    Uploaded
+                                </th>
+
+                                <th>
                                     Action
                                 </th>
 
@@ -176,73 +239,86 @@ export default function MyReports() {
 
                                 <tr>
 
-                                    <td colSpan="3">
+                                    <td
+                                        colSpan="4"
+                                    >
+
                                         No Reports Uploaded
+
                                     </td>
 
                                 </tr>
 
                             ) : (
 
-                                reports.map((report) => (
+                                reports.map(
+                                    (report) => (
 
-                                    <tr
-                                        key={report._id}
-                                    >
+                                        <tr
+                                            key={
+                                                report._id
+                                            }
+                                        >
 
-                                        <td>
-                                            {report.reportName}
-                                        </td>
+                                            <td>
+                                                {report.reportName}
+                                            </td>
 
+                                            <td>
+                                                {report.reportType}
+                                            </td>
 
-                                        <td>
-                                            {report.reportType}
-                                        </td>
+                                            <td>
 
+                                                {report.uploadedAt
+                                                    ? new Date(
+                                                        report.uploadedAt
+                                                    ).toLocaleDateString()
+                                                    : "N/A"}
 
-                                        <td>
+                                            </td>
 
-                                            <a
-                                                href={getReportUrl(
-                                                    report.filePath
-                                                )}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                            >
+                                            <td>
 
-                                                <button
-                                                    type="button"
+                                                <a
+                                                    href={
+                                                        getReportUrl(
+                                                            report.filePath
+                                                        )
+                                                    }
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="view-btn"
                                                 >
                                                     View
-                                                </button>
+                                                </a>
 
-                                            </a>
+                                            </td>
 
-                                        </td>
+                                        </tr>
 
-                                    </tr>
-
-                                ))
+                                    )
+                                )
 
                             )}
 
                         </tbody>
 
                     </table>
+
                 )}
 
 
-                <br />
-
-
-                <Link to="/patient-dashboard">
-
+                <Link
+                    to="/patient-dashboard"
+                    className="back-dashboard"
+                >
                     ← Back to Dashboard
-
                 </Link>
 
             </div>
 
         </div>
+
     );
 }
