@@ -4,54 +4,58 @@ import { Link, useNavigate } from "react-router-dom";
 import "./PatientLogin.css";
 
 export default function PatientLogin() {
-
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const handleLogin = async (e) => {
+        e.preventDefault();
 
-    e.preventDefault();
+        try {
+            const loginData = {
+                email: email.trim().toLowerCase(),
+                password: password
+            };
 
-    try {
+            const res = await axios.post(
+                "https://hospital-report-system-xdai.onrender.com/patient/login",
+                loginData
+            );
 
-        const res = await axios.post(
-            "https://hospital-report-system-xdai.onrender.com/patient/login",
-            {
-                email,
-                password
+            if (res.data.success) {
+                localStorage.setItem(
+                    "patient",
+                    JSON.stringify(res.data.patient)
+                );
+
+                localStorage.setItem(
+                    "token",
+                    res.data.token
+                );
+
+                alert("Login Successful");
+
+                navigate("/patient-dashboard");
+            } else {
+                alert("Login Failed");
             }
-        );
 
-        localStorage.setItem(
-            "patient",
-            JSON.stringify(res.data.patient)
-        );
+        } catch (err) {
+            console.log("Login Error:", err);
 
-        localStorage.setItem(
-            "token",
-            res.data.token
-        );
+            if (err.response) {
+                alert(
+                    err.response.data.message ||
+                    "Invalid Email or Password"
+                );
+            } else {
+                alert("Unable to connect to server");
+            }
+        }
+    };
 
-        alert("Login Successful");
-
-        navigate("/patient-dashboard");
-
-    } catch (err) {
-
-        console.log(err);
-
-        alert(
-            err.response?.data?.message ||
-            "Invalid Email or Password"
-        );
-
-    }
-
-};
     return (
-
         <div className="login-container">
 
             <div className="login-box">
@@ -81,39 +85,27 @@ export default function PatientLogin() {
                     />
 
                     <button type="submit">
-
                         Login
-
                     </button>
 
                 </form>
 
                 <p>
-
                     Don't have an account?
-
+                    {" "}
                     <Link to="/patient-signup">
-
                         Register
-
                     </Link>
-
                 </p>
 
                 <p>
-
                     <Link to="/">
-
                         ← Back to Home
-
                     </Link>
-
                 </p>
 
             </div>
 
         </div>
-
     );
-
 }
