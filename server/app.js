@@ -10,45 +10,102 @@ const doctorRoutes = require("./routes/doctorRoutes");
 
 const app = express();
 
+
+// =====================================================
+// MIDDLEWARE
+// =====================================================
+
 app.use(cors());
 
 app.use(express.json());
 
-app.use(express.urlencoded({ extended: true }));
+app.use(
+    express.urlencoded({
+        extended: true
+    })
+);
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
-app.use("/patient", patientRoutes);
-app.use("/doctor", doctorRoutes);
+// =====================================================
+// SERVE UPLOADED FILES
+// =====================================================
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URL)
+app.use(
+    "/uploads",
+    express.static(
+        path.join(__dirname, "uploads")
+    )
+);
 
-.then(() => {
 
-    console.log("MongoDB Connected");
+// =====================================================
+// ROUTES
+// =====================================================
 
-})
+app.use(
+    "/patient",
+    patientRoutes
+);
 
-.catch((err) => {
+app.use(
+    "/doctor",
+    doctorRoutes
+);
 
-    console.log(err);
 
-});
+// =====================================================
+// TEST ROUTE
+// =====================================================
 
-// Test Route
 app.get("/", (req, res) => {
 
-    res.send("Hospital Backend Running");
+    res.send(
+        "Hospital Backend Running"
+    );
 
 });
 
-const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+// =====================================================
+// MONGODB
+// =====================================================
 
-    console.log(`Server Running on Port ${PORT}`);
+mongoose
+    .connect(process.env.MONGO_URL)
 
-});
+    .then(() => {
+
+        console.log(
+            "MongoDB Connected"
+        );
+
+    })
+
+    .catch((err) => {
+
+        console.error(
+            "MongoDB Connection Error:",
+            err
+        );
+
+    });
+
+
+// =====================================================
+// SERVER
+// =====================================================
+
+const PORT =
+    process.env.PORT || 5000;
+
+
+app.listen(
+    PORT,
+    () => {
+
+        console.log(
+            `Server Running on Port ${PORT}`
+        );
+
+    }
+);

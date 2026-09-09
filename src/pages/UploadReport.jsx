@@ -8,53 +8,68 @@ export default function UploadReport() {
     const navigate = useNavigate();
 
     const patient =
-        JSON.parse(localStorage.getItem("patient"));
+        JSON.parse(
+            localStorage.getItem("patient")
+        );
 
-    const [reportName, setReportName] = useState("");
+
+    const [reportName, setReportName] =
+        useState("");
+
 
     const [reportType, setReportType] =
         useState("Blood Test");
 
-    const [file, setFile] = useState(null);
+
+    const [file, setFile] =
+        useState(null);
+
 
     const handleSubmit = async (e) => {
 
         e.preventDefault();
 
 
-        // ---------------------------------------------
-        // CHECK LOGIN
-        // ---------------------------------------------
+        // =============================================
+        // CHECK PATIENT LOGIN
+        // =============================================
 
         if (!patient) {
 
-            alert("Please login first");
+            alert(
+                "Please login first"
+            );
 
-            navigate("/patient-login");
+            navigate(
+                "/patient-login"
+            );
 
             return;
 
         }
 
 
-        // ---------------------------------------------
+        // =============================================
         // CHECK FILE
-        // ---------------------------------------------
+        // =============================================
 
         if (!file) {
 
-            alert("Please select a medical report");
+            alert(
+                "Please select a report"
+            );
 
             return;
 
         }
 
 
-        // ---------------------------------------------
+        // =============================================
         // CREATE FORMDATA
-        // ---------------------------------------------
+        // =============================================
 
-        const formData = new FormData();
+        const formData =
+            new FormData();
 
 
         formData.append(
@@ -81,9 +96,9 @@ export default function UploadReport() {
         );
 
 
-        // ---------------------------------------------
-        // UPLOAD
-        // ---------------------------------------------
+        // =============================================
+        // SEND TO BACKEND
+        // =============================================
 
         try {
 
@@ -92,13 +107,14 @@ export default function UploadReport() {
             );
 
 
-            const res = await axios.post(
+            const res =
+                await axios.post(
 
-                "https://hospital-report-system-xdai.onrender.com/patient/upload-report",
+                    "https://hospital-report-system-xdai.onrender.com/patient/upload-report",
 
-                formData
+                    formData
 
-            );
+                );
 
 
             console.log(
@@ -114,16 +130,18 @@ export default function UploadReport() {
                 );
 
 
-                // Clear form
                 setReportName("");
 
-                setReportType("Blood Test");
+                setReportType(
+                    "Blood Test"
+                );
 
                 setFile(null);
 
 
-                // Go to reports
-                navigate("/my-reports");
+                navigate(
+                    "/my-reports"
+                );
 
             }
 
@@ -153,8 +171,9 @@ export default function UploadReport() {
                     err.response.status
                 );
 
+
                 console.error(
-                    "DATA:",
+                    "SERVER RESPONSE:",
                     err.response.data
                 );
 
@@ -163,7 +182,7 @@ export default function UploadReport() {
 
                     err.response.data?.message ||
 
-                    "Upload failed"
+                    "Upload Failed"
 
                 );
 
@@ -196,7 +215,6 @@ export default function UploadReport() {
                 <form
                     onSubmit={handleSubmit}
                 >
-
 
                     {/* REPORT NAME */}
 
@@ -302,19 +320,17 @@ export default function UploadReport() {
                         Upload Report
                     </button>
 
-
                 </form>
 
 
                 <br />
 
 
-                <Link to="/patient-dashboard">
-
+                <Link
+                    to="/patient-dashboard"
+                >
                     ← Back to Dashboard
-
                 </Link>
-
 
             </div>
 

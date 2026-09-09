@@ -14,10 +14,13 @@ const {
 
 
 // =====================================================
-// CREATE UPLOAD DIRECTORY
+// CREATE UPLOAD FOLDER
 // =====================================================
 
-const uploadDir = path.join(__dirname, "../uploads/reports");
+const uploadDir = path.join(
+    __dirname,
+    "../uploads/reports"
+);
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, {
@@ -38,13 +41,18 @@ const storage = multer.diskStorage({
 
     filename: function (req, file, cb) {
 
-        const uniqueName =
-            Date.now() +
-            "-" +
-            file.originalname.replace(/\s+/g, "_");
+        const safeFileName =
+            file.originalname.replace(
+                /[^a-zA-Z0-9._-]/g,
+                "_"
+            );
 
-        cb(null, uniqueName);
+        const finalFileName =
+            `${Date.now()}-${safeFileName}`;
+
+        cb(null, finalFileName);
     }
+
 });
 
 
@@ -73,6 +81,7 @@ const fileFilter = (req, file, cb) => {
             ),
             false
         );
+
     }
 };
 
@@ -95,7 +104,7 @@ const upload = multer({
 
 
 // =====================================================
-// PATIENT ROUTES
+// PATIENT REGISTRATION
 // =====================================================
 
 router.post(
@@ -103,16 +112,31 @@ router.post(
     registerPatient
 );
 
+
+// =====================================================
+// PATIENT LOGIN
+// =====================================================
+
 router.post(
     "/login",
     loginPatient
 );
+
+
+// =====================================================
+// UPLOAD MEDICAL REPORT
+// =====================================================
 
 router.post(
     "/upload-report",
     upload.single("report"),
     uploadReport
 );
+
+
+// =====================================================
+// GET PATIENT REPORTS
+// =====================================================
 
 router.get(
     "/reports/:patientId",
@@ -126,7 +150,10 @@ router.get(
 
 router.use((err, req, res, next) => {
 
-    console.log("UPLOAD MIDDLEWARE ERROR:", err);
+    console.error(
+        "UPLOAD MIDDLEWARE ERROR:",
+        err
+    );
 
     if (err instanceof multer.MulterError) {
 
@@ -147,7 +174,6 @@ router.use((err, req, res, next) => {
     }
 
     next();
-
 });
 
 
