@@ -22,7 +22,8 @@ const reportSchema = new mongoose.Schema(
             required: true
         },
 
-        filePath: {
+        // Store complete file as a Data URL
+        fileData: {
             type: String,
             required: true
         },

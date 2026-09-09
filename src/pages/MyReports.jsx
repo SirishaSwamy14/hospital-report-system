@@ -13,12 +13,10 @@ export default function MyReports() {
     const [loading, setLoading] =
         useState(true);
 
-
     const patient =
         JSON.parse(
             localStorage.getItem("patient")
         );
-
 
     const BACKEND_URL =
         "https://hospital-report-system-xdai.onrender.com";
@@ -39,7 +37,6 @@ export default function MyReports() {
 
         }
 
-
         fetchReports();
 
     }, []);
@@ -49,17 +46,9 @@ export default function MyReports() {
 
         try {
 
-            console.log(
-                "Patient ID:",
-                patient.patientId
-            );
-
-
             const res =
                 await axios.get(
-
                     `${BACKEND_URL}/patient/reports/${patient.patientId}`
-
                 );
 
 
@@ -69,9 +58,7 @@ export default function MyReports() {
             );
 
 
-            if (
-                res.data.success
-            ) {
+            if (res.data.success) {
 
                 setReports(
                     res.data.reports || []
@@ -93,22 +80,10 @@ export default function MyReports() {
             );
 
 
-            if (
-                error.response
-            ) {
-
-                alert(
-                    error.response.data?.message ||
-                    "Unable to fetch reports."
-                );
-
-            } else {
-
-                alert(
-                    "Unable to connect to server."
-                );
-
-            }
+            alert(
+                error.response?.data?.message ||
+                "Unable to fetch reports."
+            );
 
         }
 
@@ -121,50 +96,30 @@ export default function MyReports() {
     };
 
 
-    const getReportUrl =
-        (filePath) => {
+    const openReport = (report) => {
 
-            if (!filePath) {
-                return "#";
-            }
+        if (!report.fileData) {
 
-
-            const cleanPath =
-                filePath.replace(
-                    /\\/g,
-                    "/"
-                );
-
-
-            if (
-                cleanPath.startsWith(
-                    "http"
-                )
-            ) {
-
-                return cleanPath;
-
-            }
-
-
-            if (
-                cleanPath.startsWith(
-                    "/"
-                )
-            ) {
-
-                return (
-                    `${BACKEND_URL}${cleanPath}`
-                );
-
-            }
-
-
-            return (
-                `${BACKEND_URL}/${cleanPath}`
+            alert(
+                "Report file is not available."
             );
 
-        };
+            return;
+
+        }
+
+        // Open PDF/image directly
+        const newWindow =
+            window.open();
+
+        if (newWindow) {
+
+            newWindow.location.href =
+                report.fileData;
+
+        }
+
+    };
 
 
     return (
@@ -172,6 +127,7 @@ export default function MyReports() {
         <div className="reports-container">
 
             <div className="reports-box">
+
 
                 <div className="reports-header">
 
@@ -242,9 +198,7 @@ export default function MyReports() {
                                     <td
                                         colSpan="4"
                                     >
-
                                         No Reports Uploaded
-
                                     </td>
 
                                 </tr>
@@ -264,9 +218,11 @@ export default function MyReports() {
                                                 {report.reportName}
                                             </td>
 
+
                                             <td>
                                                 {report.reportType}
                                             </td>
+
 
                                             <td>
 
@@ -278,20 +234,19 @@ export default function MyReports() {
 
                                             </td>
 
+
                                             <td>
 
-                                                <a
-                                                    href={
-                                                        getReportUrl(
-                                                            report.filePath
+                                                <button
+                                                    className="view-btn"
+                                                    onClick={() =>
+                                                        openReport(
+                                                            report
                                                         )
                                                     }
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="view-btn"
                                                 >
                                                     View
-                                                </a>
+                                                </button>
 
                                             </td>
 
@@ -316,9 +271,11 @@ export default function MyReports() {
                     ← Back to Dashboard
                 </Link>
 
+
             </div>
 
         </div>
 
     );
+
 }

@@ -2,8 +2,6 @@ const express = require("express");
 const router = express.Router();
 
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
 
 const {
     registerPatient,
@@ -14,55 +12,10 @@ const {
 
 
 // =====================================================
-// UPLOAD DIRECTORY
+// MULTER MEMORY STORAGE
 // =====================================================
 
-const uploadDir = path.join(
-    __dirname,
-    "../uploads/reports"
-);
-
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, {
-        recursive: true
-    });
-}
-
-
-// =====================================================
-// MULTER STORAGE
-// =====================================================
-
-const storage = multer.diskStorage({
-
-    destination: function (req, file, cb) {
-
-        cb(
-            null,
-            uploadDir
-        );
-
-    },
-
-    filename: function (req, file, cb) {
-
-        const safeFileName =
-            file.originalname.replace(
-                /[^a-zA-Z0-9._-]/g,
-                "_"
-            );
-
-        const finalFileName =
-            `${Date.now()}-${safeFileName}`;
-
-        cb(
-            null,
-            finalFileName
-        );
-
-    }
-
-});
+const storage = multer.memoryStorage();
 
 
 // =====================================================
@@ -87,7 +40,8 @@ const fileFilter = (req, file, cb) => {
         cb(
             new Error(
                 "Only PDF, JPG, JPEG and PNG files are allowed"
-            )
+            ),
+            false
         );
 
     }
@@ -112,7 +66,7 @@ const upload = multer({
 
 
 // =====================================================
-// REGISTER
+// PATIENT REGISTER
 // =====================================================
 
 router.post(
@@ -122,7 +76,7 @@ router.post(
 
 
 // =====================================================
-// LOGIN
+// PATIENT LOGIN
 // =====================================================
 
 router.post(

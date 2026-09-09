@@ -424,9 +424,9 @@ const uploadReport = async (req, res) => {
         );
 
 
-        // -----------------------------------------------
+        // =================================================
         // CHECK FILE
-        // -----------------------------------------------
+        // =================================================
 
         if (!req.file) {
 
@@ -442,9 +442,9 @@ const uploadReport = async (req, res) => {
         }
 
 
-        // -----------------------------------------------
-        // GET DATA
-        // -----------------------------------------------
+        // =================================================
+        // GET FORM DATA
+        // =================================================
 
         const {
             patientId,
@@ -453,9 +453,9 @@ const uploadReport = async (req, res) => {
         } = req.body;
 
 
-        // -----------------------------------------------
-        // VALIDATION
-        // -----------------------------------------------
+        // =================================================
+        // VALIDATE
+        // =================================================
 
         if (!patientId) {
 
@@ -505,16 +505,13 @@ const uploadReport = async (req, res) => {
         }
 
 
-        // -----------------------------------------------
+        // =================================================
         // CHECK PATIENT
-        // -----------------------------------------------
+        // =================================================
 
         const patient =
             await Patient.findOne({
-
-                patientId:
-                    patientId
-
+                patientId: patientId
             });
 
 
@@ -532,17 +529,25 @@ const uploadReport = async (req, res) => {
         }
 
 
-        // -----------------------------------------------
-        // PUBLIC FILE PATH
-        // -----------------------------------------------
+        // =================================================
+        // CONVERT FILE TO BASE64
+        // =================================================
 
-        const filePath =
-            `/uploads/reports/${req.file.filename}`;
+        const base64File =
+            req.file.buffer.toString("base64");
 
 
-        // -----------------------------------------------
+        // =================================================
+        // CREATE DATA URL
+        // =================================================
+
+        const fileData =
+            `data:${req.file.mimetype};base64,${base64File}`;
+
+
+        // =================================================
         // CREATE REPORT
-        // -----------------------------------------------
+        // =================================================
 
         const report =
             new Report({
@@ -557,30 +562,30 @@ const uploadReport = async (req, res) => {
                     reportType.trim(),
 
                 fileName:
-                    req.file.filename,
+                    req.file.originalname,
 
-                filePath:
-                    filePath
+                fileData:
+                    fileData
 
             });
 
 
-        // -----------------------------------------------
-        // SAVE REPORT
-        // -----------------------------------------------
+        // =================================================
+        // SAVE TO MONGODB
+        // =================================================
 
         await report.save();
 
 
         console.log(
-            "REPORT SAVED:",
+            "REPORT SAVED SUCCESSFULLY:",
             report._id
         );
 
 
-        // -----------------------------------------------
+        // =================================================
         // RESPONSE
-        // -----------------------------------------------
+        // =================================================
 
         return res.status(201).json({
 
@@ -589,7 +594,26 @@ const uploadReport = async (req, res) => {
             message:
                 "Medical report uploaded successfully",
 
-            report
+            report: {
+
+                _id: report._id,
+
+                patientId:
+                    report.patientId,
+
+                reportName:
+                    report.reportName,
+
+                reportType:
+                    report.reportType,
+
+                fileName:
+                    report.fileName,
+
+                uploadedAt:
+                    report.uploadedAt
+
+            }
 
         });
 
@@ -617,7 +641,6 @@ const uploadReport = async (req, res) => {
 
 };
 
-
 // =====================================================
 // GET PATIENT REPORTS
 // =====================================================
@@ -639,10 +662,7 @@ const getPatientReports = async (req, res) => {
 
         const reports =
             await Report.find({
-
-                patientId:
-                    patientId
-
+                patientId: patientId
             })
             .sort({
                 uploadedAt: -1
@@ -653,8 +673,7 @@ const getPatientReports = async (req, res) => {
 
             success: true,
 
-            reports:
-                reports
+            reports: reports
 
         });
 
@@ -681,7 +700,6 @@ const getPatientReports = async (req, res) => {
     }
 
 };
-
 
 // =====================================================
 // EXPORT

@@ -12,32 +12,75 @@ export default function UploadReport() {
             localStorage.getItem("patient")
         );
 
-
     const [reportName, setReportName] =
         useState("");
-
 
     const [reportType, setReportType] =
         useState("Blood Test");
 
-
     const [file, setFile] =
         useState(null);
 
+    const [uploading, setUploading] =
+        useState(false);
+
+
+    // =====================================================
+    // FILE SELECT
+    // =====================================================
+
+    const handleFileChange = (e) => {
+
+        const selectedFile =
+            e.target.files[0];
+
+        if (!selectedFile) {
+            setFile(null);
+            return;
+        }
+
+
+        // Maximum 10 MB
+        if (
+            selectedFile.size >
+            10 * 1024 * 1024
+        ) {
+
+            alert(
+                "File size must be less than 10 MB."
+            );
+
+            e.target.value = "";
+
+            setFile(null);
+
+            return;
+        }
+
+
+        setFile(
+            selectedFile
+        );
+    };
+
+
+    // =====================================================
+    // SUBMIT
+    // =====================================================
 
     const handleSubmit = async (e) => {
 
         e.preventDefault();
 
 
-        // =============================================
-        // CHECK PATIENT LOGIN
-        // =============================================
-
-        if (!patient) {
+        // Patient check
+        if (
+            !patient ||
+            !patient.patientId
+        ) {
 
             alert(
-                "Please login first"
+                "Please login first."
             );
 
             navigate(
@@ -45,28 +88,36 @@ export default function UploadReport() {
             );
 
             return;
-
         }
 
 
-        // =============================================
-        // CHECK FILE
-        // =============================================
-
-        if (!file) {
+        // Report name check
+        if (
+            !reportName.trim()
+        ) {
 
             alert(
-                "Please select a report"
+                "Please enter report name."
             );
 
             return;
-
         }
 
 
-        // =============================================
-        // CREATE FORMDATA
-        // =============================================
+        // File check
+        if (!file) {
+
+            alert(
+                "Please select a medical report."
+            );
+
+            return;
+        }
+
+
+        // =================================================
+        // FORMDATA
+        // =================================================
 
         const formData =
             new FormData();
@@ -80,7 +131,7 @@ export default function UploadReport() {
 
         formData.append(
             "reportName",
-            reportName
+            reportName.trim()
         );
 
 
@@ -96,18 +147,17 @@ export default function UploadReport() {
         );
 
 
-        // =============================================
-        // SEND TO BACKEND
-        // =============================================
-
         try {
+
+            setUploading(true);
+
 
             console.log(
                 "Uploading report..."
             );
 
 
-            const res =
+            const response =
                 await axios.post(
 
                     "https://hospital-report-system-xdai.onrender.com/patient/upload-report",
@@ -118,15 +168,17 @@ export default function UploadReport() {
 
 
             console.log(
-                "UPLOAD RESPONSE:",
-                res.data
+                "Upload response:",
+                response.data
             );
 
 
-            if (res.data.success) {
+            if (
+                response.data.success
+            ) {
 
                 alert(
-                    "Medical report uploaded successfully"
+                    "Medical report uploaded successfully!"
                 );
 
 
@@ -148,41 +200,43 @@ export default function UploadReport() {
             else {
 
                 alert(
-                    res.data.message ||
-                    "Upload failed"
+                    response.data.message ||
+                    "Upload failed."
                 );
 
             }
 
         }
 
-        catch (err) {
+        catch (error) {
 
             console.error(
                 "UPLOAD ERROR:",
-                err
+                error
             );
 
 
-            if (err.response) {
+            if (
+                error.response
+            ) {
 
                 console.error(
                     "STATUS:",
-                    err.response.status
+                    error.response.status
                 );
 
 
                 console.error(
-                    "SERVER RESPONSE:",
-                    err.response.data
+                    "SERVER:",
+                    error.response.data
                 );
 
 
                 alert(
 
-                    err.response.data?.message ||
+                    error.response.data?.message ||
 
-                    "Upload Failed"
+                    "Upload failed."
 
                 );
 
@@ -191,151 +245,308 @@ export default function UploadReport() {
             else {
 
                 alert(
-                    "Unable to connect to server"
+                    "Unable to connect to server."
                 );
 
             }
 
         }
 
+        finally {
+
+            setUploading(false);
+
+        }
+
     };
 
 
+    // =====================================================
+    // UI
+    // =====================================================
+
     return (
 
-        <div className="upload-container">
-
-            <div className="upload-box">
-
-                <h2>
-                    Upload Medical Report
-                </h2>
+        <div className="upload-page">
 
 
-                <form
-                    onSubmit={handleSubmit}
-                >
+            {/* =================================================
+                HEADER
+            ================================================= */}
 
-                    {/* REPORT NAME */}
+            <header className="upload-navbar">
 
-                    <label>
-                        Report Name
-                    </label>
+                <div className="upload-brand">
 
+                    <div className="upload-brand-icon">
+                        🏥
+                    </div>
 
-                    <input
+                    <div>
 
-                        type="text"
+                        <h2>
+                            Smart Hospital
+                        </h2>
 
-                        placeholder="Enter Report Name"
+                        <span>
+                            Patient Portal
+                        </span>
 
-                        value={reportName}
+                    </div>
 
-                        onChange={(e) =>
-                            setReportName(
-                                e.target.value
-                            )
-                        }
-
-                        required
-
-                    />
-
-
-                    {/* REPORT TYPE */}
-
-                    <label>
-                        Report Type
-                    </label>
-
-
-                    <select
-
-                        value={reportType}
-
-                        onChange={(e) =>
-                            setReportType(
-                                e.target.value
-                            )
-                        }
-
-                    >
-
-                        <option value="Blood Test">
-                            Blood Test
-                        </option>
-
-                        <option value="X-Ray">
-                            X-Ray
-                        </option>
-
-                        <option value="MRI Scan">
-                            MRI Scan
-                        </option>
-
-                        <option value="CT Scan">
-                            CT Scan
-                        </option>
-
-                        <option value="Prescription">
-                            Prescription
-                        </option>
-
-                        <option value="Other">
-                            Other
-                        </option>
-
-                    </select>
-
-
-                    {/* FILE */}
-
-                    <label>
-                        Select Report
-                    </label>
-
-
-                    <input
-
-                        type="file"
-
-                        accept=".pdf,.jpg,.jpeg,.png"
-
-                        onChange={(e) =>
-                            setFile(
-                                e.target.files[0]
-                            )
-                        }
-
-                        required
-
-                    />
-
-
-                    {/* BUTTON */}
-
-                    <button
-                        type="submit"
-                    >
-                        Upload Report
-                    </button>
-
-                </form>
-
-
-                <br />
+                </div>
 
 
                 <Link
                     to="/patient-dashboard"
+                    className="dashboard-link"
                 >
-                    ← Back to Dashboard
+                    ← Dashboard
                 </Link>
 
-            </div>
+            </header>
+
+
+            {/* =================================================
+                MAIN
+            ================================================= */}
+
+            <main className="upload-main">
+
+
+                <div className="upload-heading">
+
+                    <span>
+                        MEDICAL RECORDS
+                    </span>
+
+                    <h1>
+                        Upload Medical Report
+                    </h1>
+
+                    <p>
+                        Securely add your medical document
+                        to your patient record.
+                    </p>
+
+                </div>
+
+
+                {/* =================================================
+                    FORM
+                ================================================= */}
+
+                <div className="upload-card">
+
+
+                    <div className="upload-card-header">
+
+                        <div className="upload-document-icon">
+                            📄
+                        </div>
+
+                        <div>
+
+                            <h2>
+                                Report Details
+                            </h2>
+
+                            <p>
+                                Enter the details and choose your document.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <form
+                        onSubmit={handleSubmit}
+                        className="upload-form"
+                    >
+
+
+                        {/* REPORT NAME */}
+
+                        <div className="form-group">
+
+                            <label>
+                                Report Name
+                            </label>
+
+                            <input
+                                type="text"
+                                placeholder="Example: Blood Sugar Test"
+                                value={reportName}
+                                onChange={(e) =>
+                                    setReportName(
+                                        e.target.value
+                                    )
+                                }
+                                required
+                            />
+
+                        </div>
+
+
+                        {/* REPORT TYPE */}
+
+                        <div className="form-group">
+
+                            <label>
+                                Report Type
+                            </label>
+
+                            <select
+                                value={reportType}
+                                onChange={(e) =>
+                                    setReportType(
+                                        e.target.value
+                                    )
+                                }
+                            >
+
+                                <option value="Blood Test">
+                                    Blood Test
+                                </option>
+
+                                <option value="X-Ray">
+                                    X-Ray
+                                </option>
+
+                                <option value="MRI Scan">
+                                    MRI Scan
+                                </option>
+
+                                <option value="CT Scan">
+                                    CT Scan
+                                </option>
+
+                                <option value="Prescription">
+                                    Prescription
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        {/* FILE */}
+
+                        <div className="form-group">
+
+                            <label>
+                                Medical Report
+                            </label>
+
+
+                            <div className="file-input-wrapper">
+
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={handleFileChange}
+                                    required
+                                />
+
+                            </div>
+
+
+                            <small>
+                                Accepted formats: PDF, JPG, JPEG, PNG
+                                • Maximum size: 10 MB
+                            </small>
+
+                        </div>
+
+
+                        {/* FILE NAME */}
+
+                        {file && (
+
+                            <div className="selected-file-box">
+
+                                <span className="selected-file-icon">
+                                    ✓
+                                </span>
+
+                                <div>
+
+                                    <strong>
+                                        {file.name}
+                                    </strong>
+
+                                    <span>
+                                        Selected successfully
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
+
+                        {/* SUBMIT */}
+
+                        <button
+                            type="submit"
+                            className="upload-submit-button"
+                            disabled={uploading}
+                        >
+
+                            {uploading ? (
+
+                                <>
+                                    <span className="button-spinner"></span>
+                                    Uploading...
+                                </>
+
+                            ) : (
+
+                                <>
+                                    ⬆ Upload Medical Report
+                                </>
+
+                            )}
+
+                        </button>
+
+
+                    </form>
+
+
+                    <div className="upload-security-note">
+
+                        <span>
+                            🔒
+                        </span>
+
+                        <p>
+                            Your report is associated with
+                            Patient ID <strong>{patient?.patientId}</strong>.
+                        </p>
+
+                    </div>
+
+
+                </div>
+
+
+                <Link
+                    to="/patient-dashboard"
+                    className="back-dashboard-link"
+                >
+                    ← Back to Patient Dashboard
+                </Link>
+
+
+            </main>
 
         </div>
-
     );
-
 }
