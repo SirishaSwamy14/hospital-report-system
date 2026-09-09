@@ -43,17 +43,15 @@ const fileFilter = (req, file, cb) => {
             ),
             false
         );
-
     }
 };
 
 
 // =====================================================
-// MULTER CONFIGURATION
+// MULTER
 // =====================================================
 
 const upload = multer({
-
     storage: storage,
 
     fileFilter: fileFilter,
@@ -61,12 +59,11 @@ const upload = multer({
     limits: {
         fileSize: 10 * 1024 * 1024
     }
-
 });
 
 
 // =====================================================
-// PATIENT REGISTER
+// ROUTES
 // =====================================================
 
 router.post(
@@ -74,31 +71,16 @@ router.post(
     registerPatient
 );
 
-
-// =====================================================
-// PATIENT LOGIN
-// =====================================================
-
 router.post(
     "/login",
     loginPatient
 );
-
-
-// =====================================================
-// UPLOAD REPORT
-// =====================================================
 
 router.post(
     "/upload-report",
     upload.single("report"),
     uploadReport
 );
-
-
-// =====================================================
-// GET REPORTS
-// =====================================================
 
 router.get(
     "/reports/:patientId",
@@ -107,35 +89,20 @@ router.get(
 
 
 // =====================================================
-// MULTER ERROR HANDLER
+// ERROR HANDLER
 // =====================================================
 
 router.use((err, req, res, next) => {
 
     console.error(
-        "UPLOAD MIDDLEWARE ERROR:",
+        "UPLOAD ERROR:",
         err
     );
 
-    if (err instanceof multer.MulterError) {
-
-        return res.status(400).json({
-            success: false,
-            message: err.message
-        });
-
-    }
-
-    if (err) {
-
-        return res.status(400).json({
-            success: false,
-            message: err.message
-        });
-
-    }
-
-    next();
+    res.status(400).json({
+        success: false,
+        message: err.message
+    });
 
 });
 
