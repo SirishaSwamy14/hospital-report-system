@@ -1,381 +1,485 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
 import "./PatientDashboard.css";
 
 export default function PatientDashboard() {
 
     const navigate = useNavigate();
 
-    const patient = JSON.parse(localStorage.getItem("patient"));
-
+    const [patient, setPatient] = useState(null);
     const [reports, setReports] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const BACKEND_URL =
+        "https://hospital-report-system-xdai.onrender.com";
+
+
+    // =====================================================
+    // LOAD PATIENT
+    // =====================================================
 
     useEffect(() => {
 
-        if (!patient) {
+        const storedPatient =
+            localStorage.getItem("patient");
+
+        if (!storedPatient) {
 
             navigate("/patient-login");
 
             return;
-
         }
 
-        fetchReports();
+        const patientData =
+            JSON.parse(storedPatient);
 
-    }, []);
+        setPatient(patientData);
 
-    const fetchReports = async () => {
+        fetchReports(patientData.patientId);
+
+    }, [navigate]);
+
+
+    // =====================================================
+    // FETCH REPORTS
+    // =====================================================
+
+    const fetchReports = async (patientId) => {
 
         try {
 
-            const res = await axios.get(
-
-                `https://hospital-report-system-xdai.onrender.com/patient/reports/${patient.patientId}`
-
+            console.log(
+                "Fetching reports for:",
+                patientId
             );
 
-            setReports(res.data);
+            const res = await axios.get(
+                `${BACKEND_URL}/patient/reports/${patientId}`
+            );
+
+            console.log(
+                "Reports response:",
+                res.data
+            );
+
+            if (res.data.success) {
+
+                setReports(
+                    res.data.reports || []
+                );
+
+            } else {
+
+                setReports([]);
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "FETCH REPORTS ERROR:",
+                error
+            );
+
+            setReports([]);
+
+        } finally {
+
+            setLoading(false);
 
         }
-
-        catch (err) {
-
-            console.log(err);
-
-        }
-
     };
 
-    const logout = () => {
+
+    // =====================================================
+    // QR CODE URL
+    // =====================================================
+
+    const getQRUrl = () => {
+
+        if (!patient?.qrCode) {
+
+            return null;
+        }
+
+        const qrPath =
+            patient.qrCode.replace(
+                /\\/g,
+                "/"
+            );
+
+        if (qrPath.startsWith("http")) {
+
+            return qrPath;
+
+        }
+
+        if (qrPath.startsWith("/")) {
+
+            return `${BACKEND_URL}${qrPath}`;
+
+        }
+
+        return `${BACKEND_URL}/${qrPath}`;
+    };
+
+
+    // =====================================================
+    // REPORT URL
+    // =====================================================
+
+    const getReportUrl = (filePath) => {
+
+        if (!filePath) {
+
+            return "#";
+        }
+
+        const cleanPath =
+            filePath.replace(
+                /\\/g,
+                "/"
+            );
+
+        if (cleanPath.startsWith("http")) {
+
+            return cleanPath;
+
+        }
+
+        if (cleanPath.startsWith("/")) {
+
+            return `${BACKEND_URL}${cleanPath}`;
+
+        }
+
+        return `${BACKEND_URL}/${cleanPath}`;
+    };
+
+
+    // =====================================================
+    // LOGOUT
+    // =====================================================
+
+    const handleLogout = () => {
 
         localStorage.removeItem("patient");
 
         localStorage.removeItem("token");
 
-        navigate("/");
+        navigate("/patient-login");
 
     };
 
+
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    if (!patient) {
+
+        return (
+            <div>
+                Loading...
+            </div>
+        );
+    }
+
+
+    // =====================================================
+    // DASHBOARD
+    // =====================================================
+
     return (
 
-        <div className="dashboard">
+        <div className="dashboard-container">
 
-            {/* Sidebar */}
+            <h1>
+                Welcome, {patient.name}
+            </h1>
 
-           <div className="sidebar">
 
-    <h2>🏥 Smart Hospital</h2>
+            {/* =================================================
+                PATIENT DETAILS
+            ================================================= */}
 
-    <div className="menu">
+            <div className="details-grid">
 
-        <Link to="/patient-dashboard" className="menu-item">
-            🏠 Dashboard
-        </Link>
+                <div className="detail-card">
 
-        <Link to="/upload-report" className="menu-item">
-            📄 Upload Report
-        </Link>
+                    <span>
+                        Patient ID
+                    </span>
 
-        <Link to="/my-reports" className="menu-item">
-            📁 My Reports
-        </Link>
-
-        <Link to="/patient-qr" className="menu-item">
-            🔳 My QR Code
-        </Link>
-
-        <Link to="/patient-profile" className="menu-item">
-            👤 My Profile
-        </Link>
-
-        <button
-            className="logout-btn"
-            onClick={logout}
-        >
-            🚪 Logout
-        </button>
-
-    </div>
-
-</div>
-
-            {/* Main Content */}
-
-            <div className="content">
-
-                <h1>
-
-                    Welcome, {patient.name}
-
-                </h1>
-
-                <div className="patient-details">
-
-    <div className="detail-card">
-        <span>Patient ID</span>
-        <h3>{patient.patientId}</h3>
-    </div>
-
-    <div className="detail-card">
-        <span>Email</span>
-        <h3>{patient.email}</h3>
-    </div>
-
-    <div className="detail-card">
-        <span>Age</span>
-        <h3>{patient.age}</h3>
-    </div>
-
-    <div className="detail-card">
-        <span>Gender</span>
-        <h3>{patient.gender}</h3>
-    </div>
-
-    <div className="detail-card">
-        <span>Blood Group</span>
-        <h3>{patient.bloodGroup}</h3>
-    </div>
-
-    <div className="detail-card">
-        <span>Phone</span>
-        <h3>{patient.phone}</h3>
-    </div>
-
-    <div className="detail-card detail-full">
-        <span>Address</span>
-        <h3>{patient.address}</h3>
-    </div>
-
-</div>
-                {/* Recent Reports */}
-
-                <div className="recent-reports">
-
-                    <h2>
-
-                        Recent Medical Reports
-
-                    </h2>
-
-                    {
-
-                        reports.length === 0 ?
-
-                        (
-
-                            <p>
-
-                                No Reports Uploaded
-
-                            </p>
-
-                        )
-
-                        :
-
-                        (
-
-                            <table>
-
-                                <thead>
-
-                                    <tr>
-
-                                        <th>
-
-                                            Report Name
-
-                                        </th>
-
-                                        <th>
-
-                                            Type
-
-                                        </th>
-
-                                        <th>
-
-                                            View
-
-                                        </th>
-
-                                    </tr>
-
-                                </thead>
-
-                                <tbody>
-
-                                    {
-
-                                        reports.map((report) => (
-
-                                            <tr key={report._id}>
-
-                                                <td>
-
-                                                    {report.reportName}
-
-                                                </td>
-
-                                                <td>
-
-                                                    {report.reportType}
-
-                                                </td>
-
-                                                <td>
-
-                                                    <a
-
-                                                        href={`https://hospital-report-system-xdai.onrender.com/${report.filePath.replace(/\\/g, "/")}`}
-
-                                                        target="_blank"
-
-                                                        rel="noreferrer"
-
-                                                    >
-
-                                                        <button>
-
-                                                            View
-
-                                                        </button>
-
-                                                    </a>
-
-                                                </td>
-
-                                            </tr>
-
-                                        ))
-
-                                    }
-
-                                </tbody>
-
-                            </table>
-
-                        )
-
-                    }
+                    <strong>
+                        {patient.patientId}
+                    </strong>
 
                 </div>
 
-                {/* Cards */}
 
-                <div className="cards">
+                <div className="detail-card">
 
-                    <div className="card">
+                    <span>
+                        Email
+                    </span>
 
-                        <h3>
+                    <strong>
+                        {patient.email}
+                    </strong>
 
-                            📄 Upload Report
+                </div>
 
-                        </h3>
 
-                        <p>
+                <div className="detail-card">
 
-                            Upload new medical reports.
+                    <span>
+                        Age
+                    </span>
 
-                        </p>
+                    <strong>
+                        {patient.age}
+                    </strong>
 
-                        <Link to="/upload-report">
+                </div>
 
-                            <button>
 
-                                Upload
+                <div className="detail-card">
 
-                            </button>
+                    <span>
+                        Gender
+                    </span>
 
-                        </Link>
+                    <strong>
+                        {patient.gender}
+                    </strong>
 
-                    </div>
+                </div>
 
-                    <div className="card">
 
-                        <h3>
+                <div className="detail-card">
 
-                            📁 My Reports
+                    <span>
+                        Blood Group
+                    </span>
 
-                        </h3>
+                    <strong>
+                        {patient.bloodGroup}
+                    </strong>
 
-                        <p>
+                </div>
 
-                            View all uploaded reports.
 
-                        </p>
+                <div className="detail-card">
 
-                        <Link to="/my-reports">
+                    <span>
+                        Phone
+                    </span>
 
-                            <button>
+                    <strong>
+                        {patient.phone}
+                    </strong>
 
-                                Open
+                </div>
 
-                            </button>
 
-                        </Link>
+                <div className="detail-card full-width">
 
-                    </div>
+                    <span>
+                        Address
+                    </span>
 
-                    <div className="card">
-
-                        <h3>
-
-                            🔳 My QR Code
-
-                        </h3>
-
-                        <p>
-
-                            View your permanent QR Code.
-
-                        </p>
-
-                        <Link to="/patient-qr">
-
-                            <button>
-
-                                QR Code
-
-                            </button>
-
-                        </Link>
-
-                    </div>
-
-                    <div className="card">
-
-                        <h3>
-
-                            👤 My Profile
-
-                        </h3>
-
-                        <p>
-
-                            Update your personal details.
-
-                        </p>
-
-                        <Link to="/patient-profile">
-
-                            <button>
-
-                                Profile
-
-                            </button>
-
-                        </Link>
-
-                    </div>
+                    <strong>
+                        {patient.address}
+                    </strong>
 
                 </div>
 
             </div>
 
+
+            {/* =================================================
+                QR CODE
+            ================================================= */}
+
+            <div className="qr-section">
+
+                <h2>
+                    My Patient QR Code
+                </h2>
+
+
+                {getQRUrl() ? (
+
+                    <>
+
+                        <img
+                            src={getQRUrl()}
+                            alt="Patient QR Code"
+                            className="patient-qr"
+                        />
+
+
+                        <p>
+                            Scan this QR code to access
+                            your patient information.
+                        </p>
+
+
+                        <a
+                            href={getQRUrl()}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+
+                            <button>
+                                Open QR Code
+                            </button>
+
+                        </a>
+
+                    </>
+
+                ) : (
+
+                    <p>
+                        QR Code is not available.
+                    </p>
+
+                )}
+
+            </div>
+
+
+            {/* =================================================
+                RECENT REPORTS
+            ================================================= */}
+
+            <div className="reports-section">
+
+                <h2>
+                    Recent Medical Reports
+                </h2>
+
+
+                {loading ? (
+
+                    <p>
+                        Loading reports...
+                    </p>
+
+                ) : reports.length === 0 ? (
+
+                    <p>
+                        No Reports Uploaded
+                    </p>
+
+                ) : (
+
+                    <div className="reports-list">
+
+                        {reports.slice(0, 5).map(
+                            (report) => (
+
+                                <div
+                                    className="report-card"
+                                    key={report._id}
+                                >
+
+                                    <div>
+
+                                        <h3>
+                                            {report.reportName}
+                                        </h3>
+
+                                        <p>
+                                            Type:
+                                            {" "}
+                                            {report.reportType}
+                                        </p>
+
+                                        <p>
+                                            Uploaded:
+                                            {" "}
+                                            {report.uploadedAt
+                                                ? new Date(
+                                                    report.uploadedAt
+                                                ).toLocaleDateString()
+                                                : "N/A"}
+                                        </p>
+
+                                    </div>
+
+
+                                    <a
+                                        href={getReportUrl(
+                                            report.filePath
+                                        )}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+
+                                        <button>
+                                            View Report
+                                        </button>
+
+                                    </a>
+
+                                </div>
+
+                            )
+                        )}
+
+                    </div>
+
+                )}
+
+
+                <br />
+
+
+                <Link to="/my-reports">
+
+                    View All Reports
+
+                </Link>
+
+            </div>
+
+
+            {/* =================================================
+                ACTIONS
+            ================================================= */}
+
+            <div className="dashboard-actions">
+
+                <Link to="/upload-report">
+
+                    <button>
+                        Upload Medical Report
+                    </button>
+
+                </Link>
+
+
+                <Link to="/patient-profile">
+
+                    <button>
+                        My Profile
+                    </button>
+
+                </Link>
+
+
+                <button
+                    onClick={handleLogout}
+                >
+                    Logout
+                </button>
+
+            </div>
+
         </div>
-
     );
-
 }
