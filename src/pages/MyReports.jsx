@@ -8,13 +8,18 @@ export default function MyReports() {
     const navigate = useNavigate();
 
     const [reports, setReports] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const patient = JSON.parse(localStorage.getItem("patient"));
+    const patient = JSON.parse(
+        localStorage.getItem("patient")
+    );
 
     useEffect(() => {
 
-        if (!patient) {
+        if (!patient || !patient.patientId) {
+
             navigate("/patient-login");
+
             return;
         }
 
@@ -26,27 +31,102 @@ export default function MyReports() {
 
         try {
 
-            const res = await axios.get(
-
-                `https://hospital-report-system-xdai.onrender.comhospital-report-system-xdai.onrender.com/patient/reports/${patient.patientId}`
-
+            console.log(
+                "Patient ID:",
+                patient.patientId
             );
 
-            console.log(res.data);
+            const res = await axios.get(
+                `https://hospital-report-system-xdai.onrender.com/patient/reports/${patient.patientId}`
+            );
 
-            setReports(res.data);
+            console.log(
+                "Reports Response:",
+                res.data
+            );
 
+            if (res.data.success) {
+
+                setReports(
+                    res.data.reports || []
+                );
+
+            } else {
+
+                setReports([]);
+
+                alert(
+                    res.data.message ||
+                    "Unable to fetch reports."
+                );
+            }
+
+        } catch (err) {
+
+            console.error(
+                "FETCH REPORTS ERROR:",
+                err
+            );
+
+            if (err.response) {
+
+                console.error(
+                    "STATUS:",
+                    err.response.status
+                );
+
+                console.error(
+                    "SERVER RESPONSE:",
+                    err.response.data
+                );
+
+                alert(
+                    err.response.data?.message ||
+                    "Unable to fetch reports."
+                );
+
+            } else {
+
+                alert(
+                    "Unable to connect to server."
+                );
+            }
+
+        } finally {
+
+            setLoading(false);
         }
-
-        catch (err) {
-
-            console.log(err);
-
-            alert("Unable to fetch reports.");
-
-        }
-
     };
+
+
+    const getReportUrl = (filePath) => {
+
+        if (!filePath) {
+            return "#";
+        }
+
+        // Convert Windows slashes to normal URL slashes
+        const cleanPath =
+            filePath.replace(/\\/g, "/");
+
+        // If the stored path already begins with /uploads
+        if (cleanPath.startsWith("/uploads")) {
+
+            return `https://hospital-report-system-xdai.onrender.com${cleanPath}`;
+
+        }
+
+        // If old records contain uploads/...
+        if (cleanPath.startsWith("uploads/")) {
+
+            return `https://hospital-report-system-xdai.onrender.com/${cleanPath}`;
+
+        }
+
+        // Fallback
+        return `https://hospital-report-system-xdai.onrender.com/${cleanPath}`;
+    };
+
 
     return (
 
@@ -54,78 +134,86 @@ export default function MyReports() {
 
             <div className="reports-box">
 
-                <h2>My Medical Reports</h2>
+                <h2>
+                    My Medical Reports
+                </h2>
 
-                <table>
 
-                    <thead>
+                {loading ? (
 
-                        <tr>
+                    <p>
+                        Loading reports...
+                    </p>
 
-                            <th>Report Name</th>
+                ) : (
 
-                            <th>Report Type</th>
+                    <table>
 
-                            <th>Action</th>
+                        <thead>
 
-                        </tr>
+                            <tr>
 
-                    </thead>
+                                <th>
+                                    Report Name
+                                </th>
 
-                    <tbody>
+                                <th>
+                                    Report Type
+                                </th>
 
-                        {
+                                <th>
+                                    Action
+                                </th>
 
-                            reports.length === 0 ?
+                            </tr>
 
-                                (
+                        </thead>
 
-                                    <tr>
 
-                                        <td colSpan="3">
+                        <tbody>
 
-                                            No Reports Uploaded
+                            {reports.length === 0 ? (
 
-                                        </td>
+                                <tr>
 
-                                    </tr>
+                                    <td colSpan="3">
+                                        No Reports Uploaded
+                                    </td>
 
-                                )
+                                </tr>
 
-                                :
+                            ) : (
 
                                 reports.map((report) => (
 
-                                    <tr key={report._id}>
+                                    <tr
+                                        key={report._id}
+                                    >
 
                                         <td>
-
                                             {report.reportName}
-
                                         </td>
+
 
                                         <td>
-
                                             {report.reportType}
-
                                         </td>
+
 
                                         <td>
 
                                             <a
-
-                                                href={`https://hospital-report-system-xdai.onrender.comhospital-report-system-xdai.onrender.com/${report.filePath.replace(/\\/g, "/")}`}
-
+                                                href={getReportUrl(
+                                                    report.filePath
+                                                )}
                                                 target="_blank"
-
                                                 rel="noreferrer"
-
                                             >
 
-                                                <button>
-
+                                                <button
+                                                    type="button"
+                                                >
                                                     View
-
                                                 </button>
 
                                             </a>
@@ -136,13 +224,16 @@ export default function MyReports() {
 
                                 ))
 
-                        }
+                            )}
 
-                    </tbody>
+                        </tbody>
 
-                </table>
+                    </table>
+                )}
 
-                <br/>
+
+                <br />
+
 
                 <Link to="/patient-dashboard">
 
@@ -153,7 +244,5 @@ export default function MyReports() {
             </div>
 
         </div>
-
     );
-
 }
