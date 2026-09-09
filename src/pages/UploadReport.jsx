@@ -15,88 +15,45 @@ export default function UploadReport() {
 
     const [file, setFile] = useState(null);
 
-    const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        e.preventDefault();
+    if (!file) {
+        alert("Please select a report");
+        return;
+    }
 
-        if (!file) {
+    const formData = new FormData();
 
-            alert("Please select a report");
+    formData.append("patientId", patient.patientId);
+    formData.append("reportName", reportName);
+    formData.append("reportType", reportType);
+    formData.append("report", file);
 
-            return;
-
-        }
-
-        const formData = new FormData();
-
-        formData.append(
-
-            "patientId",
-
-            patient.patientId
-
-        );
-
-        formData.append(
-
-            "reportName",
-
-            reportName
-
-        );
-
-        formData.append(
-
-            "reportType",
-
-            reportType
-
-        );
-
-        formData.append(
-
-            "report",
-
-            file
-
-        );
-
-        try {
-
-            const res = await axios.post(
-
-                "https://hospital-report-system-xdai.onrender.com/patient/upload-report",
-
-                formData,
-
-                {
-
-                    headers: {
-
-                        "Content-Type": "multipart/form-data"
-
-                    }
-
+    try {
+        const res = await axios.post(
+            "https://hospital-report-system-xdai.onrender.com/patient/upload-report",
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data"
                 }
+            }
+        );
 
-            );
+        alert(res.data.message);
+        navigate("/my-reports");
 
-            alert(res.data.message);
+    } catch (err) {
+        console.log("Upload Error:", err);
 
-            navigate("/my-reports");
-
+        if (err.response) {
+            alert(err.response.data.message || "Upload Failed");
+        } else {
+            alert("Unable to connect to server");
         }
-
-        catch (err) {
-
-            console.log(err);
-
-            alert("Upload Failed");
-
-        }
-
-    };
-
+    }
+};
     return (
 
         <div className="upload-container">
