@@ -10,74 +10,47 @@ export default function PatientDashboard() {
     const BACKEND_URL =
         "https://hospital-report-system-xdai.onrender.com";
 
+    const [patient, setPatient] = useState(null);
+    const [reports, setReports] = useState([]);
+    const [loadingReports, setLoadingReports] = useState(true);
 
-    const [patient, setPatient] =
-        useState(null);
 
-    const [reports, setReports] =
-        useState([]);
-
-    const [loading, setLoading] =
-        useState(true);
-
+    // =====================================================
+    // LOAD PATIENT
+    // =====================================================
 
     useEffect(() => {
 
         const storedPatient =
             localStorage.getItem("patient");
 
-
         if (!storedPatient) {
-
-            navigate(
-                "/patient-login"
-            );
-
+            navigate("/patient-login");
             return;
-
         }
-
 
         try {
 
             const patientData =
-                JSON.parse(
-                    storedPatient
-                );
+                JSON.parse(storedPatient);
 
-
-            setPatient(
-                patientData
-            );
-
+            setPatient(patientData);
 
             fetchReports(
                 patientData.patientId
             );
 
-        }
-
-        catch (error) {
+        } catch (error) {
 
             console.error(
                 "PATIENT DATA ERROR:",
                 error
             );
 
+            localStorage.removeItem("patient");
+            localStorage.removeItem("token");
 
-            localStorage.removeItem(
-                "patient"
-            );
-
-            localStorage.removeItem(
-                "token"
-            );
-
-
-            navigate(
-                "/patient-login"
-            );
-
+            navigate("/patient-login");
         }
 
     }, [navigate]);
@@ -87,99 +60,194 @@ export default function PatientDashboard() {
     // FETCH REPORTS
     // =====================================================
 
-    const fetchReports =
-        async (patientId) => {
+    const fetchReports = async (patientId) => {
 
-            try {
+        try {
 
-                const res =
-                    await axios.get(
+            console.log(
+                "Fetching reports for:",
+                patientId
+            );
 
-                        `${BACKEND_URL}/patient/reports/${patientId}`
-
-                    );
-
-
-                if (
-                    res.data.success
-                ) {
-
-                    setReports(
-                        res.data.reports || []
-                    );
-
-                }
-
-            }
-
-            catch (error) {
-
-                console.error(
-                    "FETCH REPORTS ERROR:",
-                    error
+            const response =
+                await axios.get(
+                    `${BACKEND_URL}/patient/reports/${patientId}`
                 );
+
+            console.log(
+                "Reports response:",
+                response.data
+            );
+
+            if (response.data.success) {
+
+                setReports(
+                    response.data.reports || []
+                );
+
+            } else {
 
                 setReports([]);
 
             }
 
-            finally {
+        } catch (error) {
 
-                setLoading(false);
-
-            }
-
-        };
-
-
-    // =====================================================
-    // REPORT URL
-    // =====================================================
-
-    const getReportUrl =
-        (filePath) => {
-
-            if (!filePath) {
-                return "#";
-            }
-
-
-            const cleanPath =
-                filePath.replace(
-                    /\\/g,
-                    "/"
-                );
-
-
-            if (
-                cleanPath.startsWith(
-                    "http"
-                )
-            ) {
-
-                return cleanPath;
-
-            }
-
-
-            if (
-                cleanPath.startsWith(
-                    "/"
-                )
-            ) {
-
-                return (
-                    `${BACKEND_URL}${cleanPath}`
-                );
-
-            }
-
-
-            return (
-                `${BACKEND_URL}/${cleanPath}`
+            console.error(
+                "FETCH REPORTS ERROR:",
+                error
             );
 
-        };
+            setReports([]);
+
+        } finally {
+
+            setLoadingReports(false);
+
+        }
+
+    };
+
+
+    // =====================================================
+    // OPEN REPORT
+    // =====================================================
+
+    const openReport = (report) => {
+
+        try {
+
+            if (!report || !report.fileData) {
+
+                alert(
+                    "Report file is not available."
+                );
+
+                return;
+
+            }
+
+
+            /*
+             * fileData format:
+             *
+             * data:application/pdf;base64,JVBERi0xLjQ...
+             *
+             * or
+             *
+             * data:image/png;base64,...
+             */
+
+
+            const commaIndex =
+                report.fileData.indexOf(",");
+
+
+            if (commaIndex === -1) {
+
+                alert(
+                    "Invalid report file data."
+                );
+
+                return;
+
+            }
+
+
+            // Extract MIME type
+            const header =
+                report.fileData.substring(
+                    5,
+                    commaIndex
+                );
+
+
+            const mimeType =
+                header.split(";")[0];
+
+
+            // Extract Base64 data
+            const base64Data =
+                report.fileData.substring(
+                    commaIndex + 1
+                );
+
+
+            // Convert Base64 -> binary
+            const byteCharacters =
+                atob(base64Data);
+
+
+            const byteNumbers =
+                new Array(
+                    byteCharacters.length
+                );
+
+
+            for (
+                let i = 0;
+                i < byteCharacters.length;
+                i++
+            ) {
+
+                byteNumbers[i] =
+                    byteCharacters.charCodeAt(i);
+
+            }
+
+
+            const byteArray =
+                new Uint8Array(
+                    byteNumbers
+                );
+
+
+            // Create Blob
+            const blob =
+                new Blob(
+                    [byteArray],
+                    {
+                        type: mimeType
+                    }
+                );
+
+
+            // Create temporary URL
+            const blobUrl =
+                URL.createObjectURL(blob);
+
+
+            // Open report
+            const newWindow =
+                window.open(
+                    blobUrl,
+                    "_blank"
+                );
+
+
+            if (!newWindow) {
+
+                alert(
+                    "Please allow pop-ups to view the report."
+                );
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "OPEN REPORT ERROR:",
+                error
+            );
+
+            alert(
+                "Unable to open the report."
+            );
+
+        }
+
+    };
 
 
     // =====================================================
@@ -188,31 +256,40 @@ export default function PatientDashboard() {
 
     const handleLogout = () => {
 
-        localStorage.removeItem(
-            "patient"
-        );
+        localStorage.removeItem("patient");
+        localStorage.removeItem("token");
 
-        localStorage.removeItem(
-            "token"
-        );
-
-        navigate(
-            "/patient-login"
-        );
+        navigate("/patient-login");
 
     };
 
 
+    // =====================================================
+    // LOADING
+    // =====================================================
+
     if (!patient) {
 
         return (
+
             <div className="dashboard-loading">
-                Loading dashboard...
+
+                <div className="loading-spinner"></div>
+
+                <p>
+                    Loading dashboard...
+                </p>
+
             </div>
+
         );
 
     }
 
+
+    // =====================================================
+    // DASHBOARD
+    // =====================================================
 
     return (
 
@@ -248,15 +325,16 @@ export default function PatientDashboard() {
 
                 <div className="nav-actions">
 
-                    <Link to="/patient-profile">
-                        <button className="nav-profile-btn">
-                            👤 My Profile
-                        </button>
+                    <Link
+                        to="/patient-profile"
+                        className="nav-link"
+                    >
+                        👤 My Profile
                     </Link>
 
 
                     <button
-                        className="nav-logout-btn"
+                        className="logout-button"
                         onClick={handleLogout}
                     >
                         Logout
@@ -268,38 +346,48 @@ export default function PatientDashboard() {
 
 
             {/* =================================================
-                MAIN
+                MAIN CONTENT
             ================================================= */}
 
             <main className="dashboard-main">
 
 
-                {/* WELCOME */}
+                {/* =================================================
+                    WELCOME
+                ================================================= */}
 
                 <section className="welcome-banner">
 
-                    <div>
+                    <div className="welcome-content">
 
-                        <p className="welcome-label">
+                        <span className="welcome-tag">
                             PATIENT DASHBOARD
-                        </p>
+                        </span>
+
 
                         <h1>
+
                             Welcome back,{" "}
+
                             <span>
                                 {patient.name}
                             </span>
+
                         </h1>
 
-                        <p className="welcome-text">
-                            Manage your medical information,
-                            reports and patient records in one place.
+
+                        <p>
+
+                            Manage your patient information,
+                            medical reports and QR identification
+                            from one secure place.
+
                         </p>
 
                     </div>
 
 
-                    <div className="patient-id-badge">
+                    <div className="patient-id-box">
 
                         <span>
                             Patient ID
@@ -314,21 +402,23 @@ export default function PatientDashboard() {
                 </section>
 
 
-                {/* STATS */}
+                {/* =================================================
+                    SUMMARY CARDS
+                ================================================= */}
 
-                <section className="stats-grid">
+                <section className="summary-grid">
 
 
-                    <div className="stat-card">
+                    <div className="summary-card">
 
-                        <div className="stat-icon blue">
-                            🧾
+                        <div className="summary-icon blue-icon">
+                            📄
                         </div>
 
                         <div>
 
                             <span>
-                                Total Reports
+                                Medical Reports
                             </span>
 
                             <strong>
@@ -340,9 +430,9 @@ export default function PatientDashboard() {
                     </div>
 
 
-                    <div className="stat-card">
+                    <div className="summary-card">
 
-                        <div className="stat-icon green">
+                        <div className="summary-icon red-icon">
                             🩸
                         </div>
 
@@ -361,10 +451,10 @@ export default function PatientDashboard() {
                     </div>
 
 
-                    <div className="stat-card">
+                    <div className="summary-card">
 
-                        <div className="stat-icon purple">
-                            ⚧
+                        <div className="summary-icon purple-icon">
+                            ⚕
                         </div>
 
                         <div>
@@ -382,9 +472,9 @@ export default function PatientDashboard() {
                     </div>
 
 
-                    <div className="stat-card">
+                    <div className="summary-card">
 
-                        <div className="stat-icon orange">
+                        <div className="summary-icon orange-icon">
                             🎂
                         </div>
 
@@ -405,16 +495,20 @@ export default function PatientDashboard() {
                 </section>
 
 
-                {/* PATIENT + QR */}
+                {/* =================================================
+                    PATIENT INFO + QR
+                ================================================= */}
 
-                <section className="dashboard-grid">
+                <section className="main-card-grid">
 
 
-                    {/* PATIENT INFO */}
+                    {/* =================================================
+                        PERSONAL INFORMATION
+                    ================================================= */}
 
-                    <div className="info-card">
+                    <div className="profile-card">
 
-                        <div className="card-heading">
+                        <div className="section-header">
 
                             <div>
 
@@ -428,16 +522,18 @@ export default function PatientDashboard() {
 
                             </div>
 
-                            <span className="heading-icon">
+
+                            <div className="section-icon">
                                 👤
-                            </span>
+                            </div>
 
                         </div>
 
 
-                        <div className="info-list">
+                        <div className="profile-details">
 
-                            <div className="info-item">
+
+                            <div className="profile-row">
 
                                 <span>
                                     Full Name
@@ -450,10 +546,10 @@ export default function PatientDashboard() {
                             </div>
 
 
-                            <div className="info-item">
+                            <div className="profile-row">
 
                                 <span>
-                                    Email Address
+                                    Email
                                 </span>
 
                                 <strong>
@@ -463,10 +559,10 @@ export default function PatientDashboard() {
                             </div>
 
 
-                            <div className="info-item">
+                            <div className="profile-row">
 
                                 <span>
-                                    Phone Number
+                                    Phone
                                 </span>
 
                                 <strong>
@@ -476,7 +572,7 @@ export default function PatientDashboard() {
                             </div>
 
 
-                            <div className="info-item">
+                            <div className="profile-row">
 
                                 <span>
                                     Address
@@ -488,12 +584,25 @@ export default function PatientDashboard() {
 
                             </div>
 
+
+                            <div className="profile-row">
+
+                                <span>
+                                    Patient ID
+                                </span>
+
+                                <strong>
+                                    {patient.patientId}
+                                </strong>
+
+                            </div>
+
                         </div>
 
 
                         <Link
                             to="/patient-profile"
-                            className="card-link"
+                            className="profile-link"
                         >
                             View Full Profile →
                         </Link>
@@ -501,11 +610,13 @@ export default function PatientDashboard() {
                     </div>
 
 
-                    {/* QR CODE */}
+                    {/* =================================================
+                        QR CODE
+                    ================================================= */}
 
                     <div className="qr-card">
 
-                        <div className="qr-header">
+                        <div className="section-header">
 
                             <div>
 
@@ -514,26 +625,26 @@ export default function PatientDashboard() {
                                 </h2>
 
                                 <p>
-                                    Quick access to your patient ID
+                                    Quick patient identification
                                 </p>
 
                             </div>
 
-                            <div className="qr-small-icon">
+
+                            <div className="section-icon">
                                 ▦
                             </div>
 
                         </div>
 
 
-                        <div className="qr-body">
-
+                        <div className="qr-content">
 
                             {patient.qrCode ? (
 
                                 <>
 
-                                    <div className="qr-image-wrapper">
+                                    <div className="qr-image-container">
 
                                         <img
                                             src={patient.qrCode}
@@ -543,33 +654,45 @@ export default function PatientDashboard() {
                                     </div>
 
 
-                                    <p className="qr-id">
+                                    <div className="qr-patient-id">
                                         {patient.patientId}
+                                    </div>
+
+
+                                    <p className="qr-help-text">
+
+                                        Show this QR code to authorized
+                                        hospital staff for quick identification.
+
                                     </p>
 
 
-                                    <p className="qr-description">
-                                        Show or scan this QR code
-                                        for quick patient identification.
-                                    </p>
+                                    <button
+                                        className="qr-open-button"
+                                        onClick={() => {
 
+                                            const newWindow =
+                                                window.open();
 
-                                    <a
-                                        href={patient.qrCode}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="qr-button"
+                                            if (newWindow) {
+
+                                                newWindow.location.href =
+                                                    patient.qrCode;
+
+                                            }
+
+                                        }}
                                     >
                                         Open QR Code
-                                    </a>
+                                    </button>
 
                                 </>
 
                             ) : (
 
-                                <div className="qr-unavailable">
+                                <div className="qr-empty">
 
-                                    <div>
+                                    <div className="qr-empty-icon">
                                         ▦
                                     </div>
 
@@ -578,7 +701,8 @@ export default function PatientDashboard() {
                                     </h3>
 
                                     <p>
-                                        Please login again to generate your QR code.
+                                        Please logout and login again
+                                        to refresh your patient information.
                                     </p>
 
                                 </div>
@@ -592,9 +716,11 @@ export default function PatientDashboard() {
                 </section>
 
 
-                {/* QUICK ACTIONS */}
+                {/* =================================================
+                    QUICK ACTIONS
+                ================================================= */}
 
-                <section className="quick-actions">
+                <section className="actions-section">
 
                     <div className="section-title">
 
@@ -603,13 +729,13 @@ export default function PatientDashboard() {
                         </h2>
 
                         <p>
-                            Access your healthcare features
+                            Manage your medical records
                         </p>
 
                     </div>
 
 
-                    <div className="action-grid">
+                    <div className="actions-grid">
 
 
                         <Link
@@ -617,11 +743,11 @@ export default function PatientDashboard() {
                             className="action-card"
                         >
 
-                            <div className="action-icon">
-                                ⬆️
+                            <div className="action-card-icon upload-icon">
+                                ⬆
                             </div>
 
-                            <div>
+                            <div className="action-text">
 
                                 <h3>
                                     Upload Report
@@ -633,7 +759,7 @@ export default function PatientDashboard() {
 
                             </div>
 
-                            <span>
+                            <span className="action-arrow">
                                 →
                             </span>
 
@@ -645,11 +771,11 @@ export default function PatientDashboard() {
                             className="action-card"
                         >
 
-                            <div className="action-icon">
+                            <div className="action-card-icon report-icon">
                                 📄
                             </div>
 
-                            <div>
+                            <div className="action-text">
 
                                 <h3>
                                     My Reports
@@ -661,7 +787,7 @@ export default function PatientDashboard() {
 
                             </div>
 
-                            <span>
+                            <span className="action-arrow">
                                 →
                             </span>
 
@@ -673,23 +799,23 @@ export default function PatientDashboard() {
                             className="action-card"
                         >
 
-                            <div className="action-icon">
+                            <div className="action-card-icon profile-icon">
                                 👤
                             </div>
 
-                            <div>
+                            <div className="action-text">
 
                                 <h3>
                                     My Profile
                                 </h3>
 
                                 <p>
-                                    Manage your information
+                                    View your personal details
                                 </p>
 
                             </div>
 
-                            <span>
+                            <span className="action-arrow">
                                 →
                             </span>
 
@@ -700,11 +826,13 @@ export default function PatientDashboard() {
                 </section>
 
 
-                {/* REPORTS */}
+                {/* =================================================
+                    RECENT REPORTS
+                ================================================= */}
 
-                <section className="reports-card">
+                <section className="recent-reports-card">
 
-                    <div className="reports-card-header">
+                    <div className="recent-header">
 
                         <div>
 
@@ -729,17 +857,23 @@ export default function PatientDashboard() {
                     </div>
 
 
-                    {loading ? (
+                    {loadingReports ? (
 
                         <div className="reports-loading">
-                            Loading reports...
+
+                            <div className="small-spinner"></div>
+
+                            <span>
+                                Loading reports...
+                            </span>
+
                         </div>
 
                     ) : reports.length === 0 ? (
 
                         <div className="empty-reports">
 
-                            <div className="empty-icon">
+                            <div className="empty-report-icon">
                                 📄
                             </div>
 
@@ -748,13 +882,14 @@ export default function PatientDashboard() {
                             </h3>
 
                             <p>
-                                Your medical reports will appear here after upload.
+                                Your medical reports will appear here
+                                after you upload them.
                             </p>
 
 
                             <Link
                                 to="/upload-report"
-                                className="empty-button"
+                                className="upload-first-button"
                             >
                                 Upload Your First Report
                             </Link>
@@ -763,110 +898,69 @@ export default function PatientDashboard() {
 
                     ) : (
 
-                        <div className="report-table-wrapper">
+                        <div className="report-list">
 
-                            <table className="report-table">
+                            {reports
+                                .slice(0, 5)
+                                .map((report) => (
 
-                                <thead>
+                                    <div
+                                        className="report-item"
+                                        key={report._id}
+                                    >
 
-                                    <tr>
+                                        <div className="report-left">
 
-                                        <th>
-                                            Report
-                                        </th>
+                                            <div className="report-file-icon">
+                                                📄
+                                            </div>
 
-                                        <th>
-                                            Type
-                                        </th>
+                                            <div>
 
-                                        <th>
-                                            Date
-                                        </th>
+                                                <h3>
+                                                    {report.reportName}
+                                                </h3>
 
-                                        <th>
-                                            Action
-                                        </th>
+                                                <p>
+                                                    {report.reportType}
+                                                </p>
 
-                                    </tr>
+                                            </div>
 
-                                </thead>
-
-
-                                <tbody>
-
-                                    {reports
-                                        .slice(0, 5)
-                                        .map(
-                                            (report) => (
-
-                                                <tr
-                                                    key={
-                                                        report._id
-                                                    }
-                                                >
-
-                                                    <td>
-
-                                                        <div className="report-name">
-
-                                                            <span className="file-icon">
-                                                                📄
-                                                            </span>
-
-                                                            <strong>
-                                                                {report.reportName}
-                                                            </strong>
-
-                                                        </div>
-
-                                                    </td>
+                                        </div>
 
 
-                                                    <td>
+                                        <div className="report-middle">
 
-                                                        <span className="report-type">
-                                                            {report.reportType}
-                                                        </span>
+                                            <span>
+                                                Uploaded
+                                            </span>
 
-                                                    </td>
+                                            <strong>
+
+                                                {report.uploadedAt
+                                                    ? new Date(
+                                                        report.uploadedAt
+                                                    ).toLocaleDateString()
+                                                    : "N/A"}
+
+                                            </strong>
+
+                                        </div>
 
 
-                                                    <td>
+                                        <button
+                                            className="view-report-button"
+                                            onClick={() =>
+                                                openReport(report)
+                                            }
+                                        >
+                                            View
+                                        </button>
 
-                                                        {report.uploadedAt
-                                                            ? new Date(
-                                                                report.uploadedAt
-                                                            ).toLocaleDateString()
-                                                            : "N/A"}
+                                    </div>
 
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        <a
-                                                            href={
-                                                                getReportUrl(
-                                                                    report.filePath
-                                                                )
-                                                            }
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="view-report-btn"
-                                                        >
-                                                            View
-                                                        </a>
-
-                                                    </td>
-
-                                                </tr>
-
-                                            )
-                                        )}
-
-                                </tbody>
-
-                            </table>
+                                ))}
 
                         </div>
 
@@ -875,11 +969,15 @@ export default function PatientDashboard() {
                 </section>
 
 
+                {/* =================================================
+                    FOOTER
+                ================================================= */}
+
                 <footer className="dashboard-footer">
 
-                    <p>
+                    <span>
                         © 2026 Smart Hospital Report Management System
-                    </p>
+                    </span>
 
                     <span>
                         Secure • Simple • Accessible
@@ -890,5 +988,6 @@ export default function PatientDashboard() {
             </main>
 
         </div>
+
     );
 }
