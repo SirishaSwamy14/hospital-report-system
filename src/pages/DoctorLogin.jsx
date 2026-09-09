@@ -7,122 +7,191 @@ export default function DoctorLogin() {
 
     const navigate = useNavigate();
 
-    const [email, setEmail] = useState("");
+    const [email, setEmail] =
+        useState("");
 
-    const [password, setPassword] = useState("");
+    const [password, setPassword] =
+        useState("");
+
+    const [loading, setLoading] =
+        useState(false);
+
 
     const handleLogin = async (e) => {
 
         e.preventDefault();
 
+        setLoading(true);
+
+
         try {
 
-            const res = await axios.post(
+            const response =
+                await axios.post(
 
-                "https://hospital-report-system-xdai.onrender.com/doctor/login",
+                    "https://hospital-report-system-xdai.onrender.com/doctor/login",
 
-                {
+                    {
+                        email:
+                            email.trim().toLowerCase(),
 
-                    email,
+                        password:
+                            password
+                    }
 
-                    password
+                );
 
-                }
 
-            );
+            if (
+                response.data.success
+            ) {
 
-            localStorage.setItem(
+                localStorage.setItem(
+                    "doctor",
+                    JSON.stringify(
+                        response.data.doctor
+                    )
+                );
 
-                "doctor",
 
-                JSON.stringify(res.data.doctor)
+                localStorage.setItem(
+                    "doctorToken",
+                    response.data.token
+                );
 
-            );
 
-            localStorage.setItem(
+                alert(
+                    "Doctor Login Successful"
+                );
 
-                "doctorToken",
 
-                res.data.token
+                navigate(
+                    "/doctor-dashboard"
+                );
 
-            );
-
-            alert("Doctor Login Successful");
-
-            navigate("/doctor-dashboard");
+            }
 
         }
 
-        catch(err){
+        catch (error) {
 
-            console.log(err);
+            console.error(
+                "DOCTOR LOGIN ERROR:",
+                error
+            );
 
-            alert("Invalid Email or Password");
+
+            alert(
+
+                error.response?.data?.message ||
+
+                "Unable to login"
+
+            );
+
+        }
+
+        finally {
+
+            setLoading(false);
 
         }
 
     };
 
+
     return (
 
-        <div className="login-container">
+        <div className="doctor-login-page">
 
-            <div className="login-box">
+            <div className="doctor-login-card">
 
-                <h2>Doctor Login</h2>
+                <div className="doctor-login-icon">
+                    🩺
+                </div>
 
-                <form onSubmit={handleLogin}>
 
-                    <label>Email</label>
+                <h1>
+                    Doctor Login
+                </h1>
+
+
+                <p>
+                    Sign in to access the doctor portal
+                </p>
+
+
+                <form
+                    onSubmit={handleLogin}
+                >
+
+
+                    <label>
+                        Email
+                    </label>
+
 
                     <input
-
                         type="email"
-
-                        placeholder="Enter Email"
-
+                        placeholder="Enter doctor email"
                         value={email}
-
-                        onChange={(e)=>setEmail(e.target.value)}
-
+                        onChange={(e) =>
+                            setEmail(
+                                e.target.value
+                            )
+                        }
                         required
-
                     />
 
-                    <label>Password</label>
+
+                    <label>
+                        Password
+                    </label>
+
 
                     <input
-
                         type="password"
-
-                        placeholder="Enter Password"
-
+                        placeholder="Enter password"
                         value={password}
-
-                        onChange={(e)=>setPassword(e.target.value)}
-
+                        onChange={(e) =>
+                            setPassword(
+                                e.target.value
+                            )
+                        }
                         required
-
                     />
 
-                    <button type="submit">
 
-                        Login
+                    <button
+                        type="submit"
+                        disabled={loading}
+                    >
+
+                        {loading
+                            ? "Signing in..."
+                            : "Login"}
 
                     </button>
 
                 </form>
 
-                <p>
 
-                    <Link to="/">← Back to Home</Link>
-
+                <p className="doctor-login-note">
+                    Doctor accounts are created by the
+                    hospital administrator.
                 </p>
+
+
+                <Link
+                    to="/"
+                    className="doctor-home-link"
+                >
+                    ← Back to Home
+                </Link>
 
             </div>
 
         </div>
 
     );
-
 }

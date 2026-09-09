@@ -1,12 +1,14 @@
 const Doctor = require("../models/Doctor");
 const Patient = require("../models/Patient");
 const Report = require("../models/Report");
-const Prescription = require("../models/Prescription");
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-// ================= REGISTER DOCTOR =================
+
+// =====================================================
+// DOCTOR REGISTRATION
+// =====================================================
 
 const registerDoctor = async (req, res) => {
 
@@ -20,214 +22,426 @@ const registerDoctor = async (req, res) => {
             hospital
         } = req.body;
 
-        const existingDoctor = await Doctor.findOne({ email });
 
-        if (existingDoctor) {
+        // -----------------------------------------------
+        // VALIDATION
+        // -----------------------------------------------
+
+        if (
+            !name ||
+            !email ||
+            !password ||
+            !specialization ||
+            !hospital
+        ) {
+
             return res.status(400).json({
-                message: "Doctor already registered"
+                success: false,
+                message:
+                    "Name, email, password, specialization and hospital are required"
             });
+
         }
 
-        const totalDoctors = await Doctor.countDocuments();
 
-        const doctorId = "DOC" + (1001 + totalDoctors);
+        // -----------------------------------------------
+        // NORMALIZE EMAIL
+        // -----------------------------------------------
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const normalizedEmail =
+            email.trim().toLowerCase();
 
-        const doctor = new Doctor({
-            doctorId,
-            name,
-            email,
-            password: hashedPassword,
-            specialization,
-            hospital
-        });
+
+        // -----------------------------------------------
+        // CHECK EXISTING DOCTOR
+        // -----------------------------------------------
+
+        const existingDoctor =
+            await Doctor.findOne({
+                email: normalizedEmail
+            });
+
+
+        if (existingDoctor) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Doctor email already registered"
+            });
+
+        }
+
+
+        // -----------------------------------------------
+        // GENERATE DOCTOR ID
+        // -----------------------------------------------
+
+        const totalDoctors =
+            await Doctor.countDocuments();
+
+        const doctorId =
+            "DOC" + (1001 + totalDoctors);
+
+
+        // -----------------------------------------------
+        // HASH PASSWORD
+        // -----------------------------------------------
+
+        const hashedPassword =
+            await bcrypt.hash(
+                password,
+                10
+            );
+
+
+        // -----------------------------------------------
+        // CREATE DOCTOR
+        // -----------------------------------------------
+
+        const doctor =
+            new Doctor({
+
+                doctorId,
+
+                name: name.trim(),
+
+                email: normalizedEmail,
+
+                password: hashedPassword,
+
+                specialization:
+                    specialization.trim(),
+
+                hospital:
+                    hospital.trim()
+
+            });
+
+
+        // -----------------------------------------------
+        // SAVE DOCTOR
+        // -----------------------------------------------
 
         await doctor.save();
 
-        res.status(201).json({
+
+        console.log(
+            "DOCTOR REGISTERED:",
+            doctorId
+        );
+
+
+        // -----------------------------------------------
+        // RESPONSE
+        // -----------------------------------------------
+
+        return res.status(201).json({
+
             success: true,
-            message: "Doctor Registered Successfully",
-            doctor
+
+            message:
+                "Doctor Registered Successfully",
+
+            doctor: {
+
+                doctorId:
+                    doctor.doctorId,
+
+                name:
+                    doctor.name,
+
+                email:
+                    doctor.email,
+
+                specialization:
+                    doctor.specialization,
+
+                hospital:
+                    doctor.hospital
+
+            }
+
         });
 
-    } catch (err) {
+    }
 
-        console.log(err);
+    catch (error) {
 
-        res.status(500).json({
-            message: "Server Error"
+        console.error(
+            "DOCTOR REGISTER ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                error.message ||
+                "Server Error"
+
         });
 
     }
 
 };
 
-// ================= LOGIN DOCTOR =================
+
+// =====================================================
+// DOCTOR LOGIN
+// =====================================================
 
 const loginDoctor = async (req, res) => {
 
     try {
 
-        const { email, password } = req.body;
+        const {
+            email,
+            password
+        } = req.body;
 
-        const doctor = await Doctor.findOne({ email });
+
+        if (
+            !email ||
+            !password
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Email and password are required"
+
+            });
+
+        }
+
+
+        const normalizedEmail =
+            email.trim().toLowerCase();
+
+
+        console.log(
+            "DOCTOR LOGIN:",
+            normalizedEmail
+        );
+
+
+        // -----------------------------------------------
+        // FIND DOCTOR
+        // -----------------------------------------------
+
+        const doctor =
+            await Doctor.findOne({
+                email: normalizedEmail
+            });
+
 
         if (!doctor) {
 
             return res.status(404).json({
-                message: "Doctor Not Found"
+
+                success: false,
+
+                message:
+                    "Doctor Not Found"
+
             });
 
         }
 
-        const checkPassword = await bcrypt.compare(
-            password,
-            doctor.password
-        );
 
-        if (!checkPassword) {
+        // -----------------------------------------------
+        // CHECK PASSWORD
+        // -----------------------------------------------
+
+        const passwordMatch =
+            await bcrypt.compare(
+                password,
+                doctor.password
+            );
+
+
+        if (!passwordMatch) {
 
             return res.status(400).json({
-                message: "Invalid Password"
+
+                success: false,
+
+                message:
+                    "Invalid Password"
+
             });
 
         }
 
-        const token = jwt.sign(
 
-            {
-                doctorId: doctor.doctorId,
-                email: doctor.email
-            },
+        // -----------------------------------------------
+        // CREATE JWT
+        // -----------------------------------------------
 
-            process.env.JWT_SECRET,
+        const token =
+            jwt.sign(
 
-            {
-                expiresIn: "1d"
-            }
+                {
+                    doctorId:
+                        doctor.doctorId,
 
-        );
+                    email:
+                        doctor.email
+                },
 
-        res.json({
+                process.env.JWT_SECRET,
+
+                {
+                    expiresIn:
+                        "1d"
+                }
+
+            );
+
+
+        // -----------------------------------------------
+        // RESPONSE
+        // -----------------------------------------------
+
+        return res.json({
 
             success: true,
+
+            message:
+                "Doctor Login Successful",
+
             token,
-            doctor
+
+            doctor: {
+
+                doctorId:
+                    doctor.doctorId,
+
+                name:
+                    doctor.name,
+
+                email:
+                    doctor.email,
+
+                specialization:
+                    doctor.specialization,
+
+                hospital:
+                    doctor.hospital
+
+            }
 
         });
 
-    } catch (err) {
+    }
 
-        console.log(err);
+    catch (error) {
 
-        res.status(500).json({
-            message: "Server Error"
+        console.error(
+            "DOCTOR LOGIN ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                error.message ||
+                "Server Error"
+
         });
 
     }
 
 };
 
-// ================= GET PATIENT DETAILS =================
 
-const getPatientDetails = async (req, res) => {
+// =====================================================
+// GET PATIENT BY PATIENT ID
+// =====================================================
 
-    try {
-
-        const patientId = req.params.patientId;
-
-        const patient = await Patient.findOne({ patientId });
-
-        if (!patient) {
-
-            return res.status(404).json({
-                message: "Patient Not Found"
-            });
-
-        }
-
-        const reports = await Report.find({ patientId });
-
-        const prescriptions = await Prescription.find({ patientId });
-
-        res.json({
-
-            patient,
-            reports,
-            prescriptions
-
-        });
-
-    } catch (err) {
-
-        console.log(err);
-
-        res.status(500).json({
-            message: "Server Error"
-        });
-
-    }
-
-};
-
-// ================= UPLOAD PRESCRIPTION =================
-
-const uploadPrescription = async (req, res) => {
+const getPatientById = async (req, res) => {
 
     try {
 
         const {
+            patientId
+        } = req.params;
 
-            patientId,
-            doctorId,
-            notes
 
-        } = req.body;
+        const patient =
+            await Patient.findOne({
+                patientId: patientId
+            }).select("-password");
 
-        if (!req.file) {
 
-            return res.status(400).json({
-                message: "Please upload a prescription PDF"
+        if (!patient) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "Patient Not Found"
+
             });
 
         }
 
-        const prescription = new Prescription({
 
-            patientId,
+        const reports =
+            await Report.find({
+                patientId: patientId
+            }).sort({
+                uploadedAt: -1
+            });
 
-            doctorId,
 
-            notes,
-
-            filePath: req.file.path
-
-        });
-
-        await prescription.save();
-
-        res.status(201).json({
+        return res.json({
 
             success: true,
 
-            message: "Prescription Uploaded Successfully",
+            patient,
 
-            prescription
+            reports
 
         });
 
-    } catch (err) {
+    }
 
-        console.log(err);
+    catch (error) {
 
-        res.status(500).json({
-            message: "Server Error"
+        console.error(
+            "GET PATIENT ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                error.message ||
+                "Server Error"
+
         });
 
     }
 
 };
+
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = {
 
@@ -235,8 +449,6 @@ module.exports = {
 
     loginDoctor,
 
-    getPatientDetails,
-
-    uploadPrescription
+    getPatientById
 
 };
