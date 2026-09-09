@@ -7,12 +7,17 @@ export default function DoctorDashboard() {
 
     const navigate = useNavigate();
 
-    const [doctor, setDoctor] = useState(null);
-    const [patientId, setPatientId] = useState("");
-    const [loading, setLoading] = useState(false);
-
     const BACKEND_URL =
         "https://hospital-report-system-xdai.onrender.com";
+
+    const [doctor, setDoctor] = useState(null);
+    const [patientId, setPatientId] = useState("");
+    const [searching, setSearching] = useState(false);
+
+
+    // =====================================================
+    // LOAD DOCTOR
+    // =====================================================
 
     useEffect(() => {
 
@@ -24,15 +29,22 @@ export default function DoctorDashboard() {
             navigate("/doctor-login");
 
             return;
+
         }
 
         try {
 
-            setDoctor(
-                JSON.parse(storedDoctor)
-            );
+            const doctorData =
+                JSON.parse(storedDoctor);
+
+            setDoctor(doctorData);
 
         } catch (error) {
+
+            console.error(
+                "DOCTOR DATA ERROR:",
+                error
+            );
 
             localStorage.removeItem("doctor");
             localStorage.removeItem("doctorToken");
@@ -52,43 +64,49 @@ export default function DoctorDashboard() {
 
         e.preventDefault();
 
-        if (!patientId.trim()) {
+        const id =
+            patientId.trim().toUpperCase();
+
+
+        if (!id) {
 
             alert(
                 "Please enter Patient ID"
             );
 
             return;
+
         }
 
-        const id =
-            patientId.trim().toUpperCase();
 
         try {
 
-            setLoading(true);
+            setSearching(true);
+
 
             const response =
                 await axios.get(
                     `${BACKEND_URL}/doctor/patient/${id}`
                 );
 
+
             if (
-                response.data.success !== false
+                response.data.success === false
             ) {
-
-                navigate(
-                    `/doctor-patient/${id}`
-                );
-
-            } else {
 
                 alert(
                     response.data.message ||
                     "Patient not found"
                 );
 
+                return;
+
             }
+
+
+            navigate(
+                `/doctor-patient/${id}`
+            );
 
         } catch (error) {
 
@@ -97,6 +115,7 @@ export default function DoctorDashboard() {
                 error
             );
 
+
             alert(
                 error.response?.data?.message ||
                 "Patient not found"
@@ -104,7 +123,7 @@ export default function DoctorDashboard() {
 
         } finally {
 
-            setLoading(false);
+            setSearching(false);
 
         }
 
@@ -125,12 +144,24 @@ export default function DoctorDashboard() {
     };
 
 
+    // =====================================================
+    // LOADING
+    // =====================================================
+
     if (!doctor) {
 
         return (
-            <div className="doctor-loading">
-                Loading...
+
+            <div className="doctor-dashboard-loading">
+
+                <div className="doctor-loading-spinner"></div>
+
+                <p>
+                    Loading doctor portal...
+                </p>
+
             </div>
+
         );
 
     }
@@ -146,6 +177,7 @@ export default function DoctorDashboard() {
             ================================================= */}
 
             <header className="doctor-navbar">
+
 
                 <div className="doctor-brand">
 
@@ -170,22 +202,31 @@ export default function DoctorDashboard() {
 
                 <div className="doctor-nav-right">
 
-                    <div className="doctor-info">
 
-                        <strong>
-                            Dr. {doctor.name}
-                        </strong>
+                    <div className="doctor-profile">
 
-                        <span>
-                            {doctor.specialization}
-                        </span>
+                        <div className="doctor-avatar">
+                            Dr
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Dr. {doctor.name}
+                            </strong>
+
+                            <span>
+                                {doctor.specialization}
+                            </span>
+
+                        </div>
 
                     </div>
 
 
                     <button
-                        onClick={handleLogout}
                         className="doctor-logout"
+                        onClick={handleLogout}
                     >
                         Logout
                     </button>
@@ -208,29 +249,33 @@ export default function DoctorDashboard() {
 
                 <section className="doctor-welcome">
 
-                    <div>
+                    <div className="doctor-welcome-content">
 
-                        <span>
-                            DOCTOR DASHBOARD
+                        <span className="doctor-welcome-label">
+                            CLINICAL WORKSPACE
                         </span>
 
                         <h1>
-                            Welcome, Dr. {doctor.name}
+                            Welcome,{" "}
+                            <span>
+                                Dr. {doctor.name}
+                            </span>
                         </h1>
 
                         <p>
-                            Search patient records or scan a
-                            patient's QR code to access medical reports.
+                            Securely search patient records,
+                            scan patient QR codes, review medical
+                            reports and manage prescriptions.
                         </p>
 
                     </div>
 
 
-                    <div className="doctor-id-box">
+                    <div className="doctor-id-card">
 
-                        <small>
-                            Doctor ID
-                        </small>
+                        <span>
+                            DOCTOR ID
+                        </span>
 
                         <strong>
                             {doctor.doctorId}
@@ -242,49 +287,71 @@ export default function DoctorDashboard() {
 
 
                 {/* =================================================
-                    SEARCH + QR
+                    SEARCH + SCAN
                 ================================================= */}
 
-                <section className="doctor-actions-grid">
+                <section className="clinical-actions">
 
 
                     {/* SEARCH */}
 
-                    <div className="doctor-action-card">
+                    <div className="clinical-card search-card">
 
-                        <div className="doctor-action-icon">
-                            🔎
+                        <div className="clinical-card-top">
+
+                            <div className="clinical-icon search-icon">
+                                🔎
+                            </div>
+
+                            <span>
+                                PATIENT SEARCH
+                            </span>
+
                         </div>
 
+
                         <h2>
-                            Search Patient
+                            Find Patient
                         </h2>
 
+
                         <p>
-                            Enter the patient's ID to view
-                            their medical record.
+                            Enter a Patient ID to open
+                            the patient's medical record.
                         </p>
 
 
-                        <form onSubmit={searchPatient}>
+                        <form
+                            onSubmit={searchPatient}
+                            className="patient-search-form"
+                        >
 
-                            <input
-                                type="text"
-                                placeholder="Example: PAT1002"
-                                value={patientId}
-                                onChange={(e) =>
-                                    setPatientId(
-                                        e.target.value
-                                    )
-                                }
-                            />
+                            <div className="patient-input-wrapper">
+
+                                <span>
+                                    #
+                                </span>
+
+                                <input
+                                    type="text"
+                                    placeholder="PAT1002"
+                                    value={patientId}
+                                    onChange={(e) =>
+                                        setPatientId(
+                                            e.target.value
+                                        )
+                                    }
+                                />
+
+                            </div>
+
 
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={searching}
                             >
 
-                                {loading
+                                {searching
                                     ? "Searching..."
                                     : "Search Patient"}
 
@@ -297,27 +364,44 @@ export default function DoctorDashboard() {
 
                     {/* QR */}
 
-                    <div className="doctor-action-card qr-action">
+                    <div className="clinical-card scan-card">
 
-                        <div className="doctor-action-icon">
-                            📷
+                        <div className="clinical-card-top">
+
+                            <div className="clinical-icon scan-icon">
+                                📷
+                            </div>
+
+                            <span>
+                                QR IDENTIFICATION
+                            </span>
+
                         </div>
+
 
                         <h2>
                             Scan Patient QR
                         </h2>
 
+
                         <p>
                             Scan the patient's QR code
-                            for quick record access.
+                            for instant record access.
                         </p>
 
 
                         <Link
                             to="/doctor-scan-qr"
-                            className="scan-patient-button"
+                            className="scan-button"
                         >
-                            Scan QR Code
+                            <span>
+                                Scan QR Code
+                            </span>
+
+                            <strong>
+                                →
+                            </strong>
+
                         </Link>
 
                     </div>
@@ -326,61 +410,177 @@ export default function DoctorDashboard() {
 
 
                 {/* =================================================
-                    FEATURES
+                    CLINICAL FEATURES
                 ================================================= */}
 
-                <section className="doctor-features">
+                <section className="clinical-section">
 
-                    <div className="feature-card">
+
+                    <div className="section-heading">
 
                         <div>
-                            👤
+
+                            <span>
+                                DOCTOR TOOLS
+                            </span>
+
+                            <h2>
+                                Clinical Actions
+                            </h2>
+
+                            <p>
+                                Access the tools required for patient care.
+                            </p>
+
                         </div>
-
-                        <h3>
-                            Patient Details
-                        </h3>
-
-                        <p>
-                            View patient information
-                            and medical history.
-                        </p>
 
                     </div>
 
 
-                    <div className="feature-card">
+                    <div className="feature-grid">
 
-                        <div>
-                            📄
+
+                        <div className="feature-card">
+
+                            <div className="feature-icon patient-feature">
+                                👤
+                            </div>
+
+                            <h3>
+                                Patient Records
+                            </h3>
+
+                            <p>
+                                Search and review patient
+                                information and history.
+                            </p>
+
                         </div>
 
-                        <h3>
-                            Medical Reports
-                        </h3>
 
-                        <p>
-                            Access reports uploaded
-                            by the patient.
-                        </p>
+                        <div className="feature-card">
+
+                            <div className="feature-icon report-feature">
+                                📄
+                            </div>
+
+                            <h3>
+                                Medical Reports
+                            </h3>
+
+                            <p>
+                                Access patient-uploaded
+                                reports securely.
+                            </p>
+
+                        </div>
+
+
+                        <div className="feature-card">
+
+                            <div className="feature-icon prescription-feature">
+                                💊
+                            </div>
+
+                            <h3>
+                                Prescriptions
+                            </h3>
+
+                            <p>
+                                Create and upload prescriptions
+                                for patients.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                {/* =================================================
+                    HOW IT WORKS
+                ================================================= */}
+
+                <section className="workflow-section">
+
+                    <div className="workflow-heading">
+
+                        <span>
+                            SIMPLE WORKFLOW
+                        </span>
+
+                        <h2>
+                            Access Patient Records
+                        </h2>
 
                     </div>
 
 
-                    <div className="feature-card">
+                    <div className="workflow">
 
-                        <div>
-                            💊
+                        <div className="workflow-step">
+
+                            <div>
+                                01
+                            </div>
+
+                            <strong>
+                                Identify Patient
+                            </strong>
+
+                            <p>
+                                Search using Patient ID
+                                or scan the QR code.
+                            </p>
+
                         </div>
 
-                        <h3>
-                            Prescription
-                        </h3>
 
-                        <p>
-                            Upload prescriptions for
-                            the selected patient.
-                        </p>
+                        <div className="workflow-line">
+                            →
+                        </div>
+
+
+                        <div className="workflow-step">
+
+                            <div>
+                                02
+                            </div>
+
+                            <strong>
+                                Review Record
+                            </strong>
+
+                            <p>
+                                View patient information
+                                and medical reports.
+                            </p>
+
+                        </div>
+
+
+                        <div className="workflow-line">
+                            →
+                        </div>
+
+
+                        <div className="workflow-step">
+
+                            <div>
+                                03
+                            </div>
+
+                            <strong>
+                                Provide Care
+                            </strong>
+
+                            <p>
+                                Review reports and
+                                upload prescriptions.
+                            </p>
+
+                        </div>
 
                     </div>
 
@@ -393,9 +593,12 @@ export default function DoctorDashboard() {
 
                 <footer className="doctor-footer">
 
-                    Smart Hospital Report Management System
                     <span>
-                        Doctor Portal
+                        © 2026 Smart Hospital Report Management System
+                    </span>
+
+                    <span>
+                        Doctor Portal • Secure Clinical Access
                     </span>
 
                 </footer>
@@ -403,6 +606,5 @@ export default function DoctorDashboard() {
             </main>
 
         </div>
-
     );
 }
