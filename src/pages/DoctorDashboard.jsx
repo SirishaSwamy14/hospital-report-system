@@ -1,138 +1,113 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
-import "./PatientDashboard.css";
+import axios from "axios";
+import "./DoctorDashboard.css";
 
-export default function PatientDashboard() {
+export default function DoctorDashboard() {
 
     const navigate = useNavigate();
+
+    const [doctor, setDoctor] = useState(null);
+    const [patientId, setPatientId] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const BACKEND_URL =
         "https://hospital-report-system-xdai.onrender.com";
 
-    const [patient, setPatient] = useState(null);
-    const [reports, setReports] = useState([]);
-    const [loadingReports, setLoadingReports] = useState(true);
-
-    // =====================================================
-    // LOAD PATIENT
-    // =====================================================
-
     useEffect(() => {
 
-        const storedPatient =
-            localStorage.getItem("patient");
+        const storedDoctor =
+            localStorage.getItem("doctor");
 
-        if (!storedPatient) {
-            navigate("/patient-login");
+        if (!storedDoctor) {
+
+            navigate("/doctor-login");
+
             return;
         }
 
         try {
 
-            const patientData =
-                JSON.parse(storedPatient);
-
-            setPatient(patientData);
-
-            fetchReports(patientData.patientId);
+            setDoctor(
+                JSON.parse(storedDoctor)
+            );
 
         } catch (error) {
 
-            console.error(
-                "PATIENT DATA ERROR:",
-                error
-            );
+            localStorage.removeItem("doctor");
+            localStorage.removeItem("doctorToken");
 
-            localStorage.removeItem("patient");
-            localStorage.removeItem("token");
+            navigate("/doctor-login");
 
-            navigate("/patient-login");
         }
 
     }, [navigate]);
 
 
     // =====================================================
-    // FETCH REPORTS
+    // SEARCH PATIENT
     // =====================================================
 
-    const fetchReports = async (patientId) => {
+    const searchPatient = async (e) => {
+
+        e.preventDefault();
+
+        if (!patientId.trim()) {
+
+            alert(
+                "Please enter Patient ID"
+            );
+
+            return;
+        }
+
+        const id =
+            patientId.trim().toUpperCase();
 
         try {
 
-            console.log(
-                "Fetching reports for:",
-                patientId
-            );
+            setLoading(true);
 
-            const response = await axios.get(
-                `${BACKEND_URL}/patient/reports/${patientId}`
-            );
+            const response =
+                await axios.get(
+                    `${BACKEND_URL}/doctor/patient/${id}`
+                );
 
-            console.log(
-                "Reports response:",
-                response.data
-            );
+            if (
+                response.data.success !== false
+            ) {
 
-            if (response.data.success) {
-
-                setReports(
-                    response.data.reports || []
+                navigate(
+                    `/doctor-patient/${id}`
                 );
 
             } else {
 
-                setReports([]);
+                alert(
+                    response.data.message ||
+                    "Patient not found"
+                );
 
             }
 
         } catch (error) {
 
             console.error(
-                "FETCH REPORTS ERROR:",
+                "PATIENT SEARCH ERROR:",
                 error
             );
 
-            setReports([]);
+            alert(
+                error.response?.data?.message ||
+                "Patient not found"
+            );
 
         } finally {
 
-            setLoadingReports(false);
+            setLoading(false);
 
         }
-    };
 
-
-    // =====================================================
-    // OPEN REPORT
-    // =====================================================
-
-    const openReport = (report) => {
-
-        if (!report.fileData) {
-
-            alert(
-                "Report file is not available."
-            );
-
-            return;
-        }
-
-        const newWindow =
-            window.open();
-
-        if (!newWindow) {
-
-            alert(
-                "Please allow pop-ups to view the report."
-            );
-
-            return;
-        }
-
-        newWindow.location.href =
-            report.fileData;
     };
 
 
@@ -142,52 +117,39 @@ export default function PatientDashboard() {
 
     const handleLogout = () => {
 
-        localStorage.removeItem("patient");
-        localStorage.removeItem("token");
+        localStorage.removeItem("doctor");
+        localStorage.removeItem("doctorToken");
 
-        navigate("/patient-login");
+        navigate("/doctor-login");
 
     };
 
 
-    // =====================================================
-    // LOADING
-    // =====================================================
-
-    if (!patient) {
+    if (!doctor) {
 
         return (
-            <div className="dashboard-loading">
-
-                <div className="loading-spinner"></div>
-
-                <p>
-                    Loading dashboard...
-                </p>
-
+            <div className="doctor-loading">
+                Loading...
             </div>
         );
 
     }
 
 
-    // =====================================================
-    // DASHBOARD
-    // =====================================================
-
     return (
 
-        <div className="patient-dashboard">
+        <div className="doctor-dashboard-page">
+
 
             {/* =================================================
                 NAVBAR
             ================================================= */}
 
-            <header className="dashboard-navbar">
+            <header className="doctor-navbar">
 
-                <div className="brand-section">
+                <div className="doctor-brand">
 
-                    <div className="brand-icon">
+                    <div className="doctor-brand-icon">
                         🏥
                     </div>
 
@@ -198,7 +160,7 @@ export default function PatientDashboard() {
                         </h2>
 
                         <span>
-                            Patient Portal
+                            Doctor Portal
                         </span>
 
                     </div>
@@ -206,18 +168,24 @@ export default function PatientDashboard() {
                 </div>
 
 
-                <div className="nav-actions">
+                <div className="doctor-nav-right">
 
-                    <Link
-                        to="/patient-profile"
-                        className="nav-link"
-                    >
-                        👤 My Profile
-                    </Link>
+                    <div className="doctor-info">
+
+                        <strong>
+                            Dr. {doctor.name}
+                        </strong>
+
+                        <span>
+                            {doctor.specialization}
+                        </span>
+
+                    </div>
+
 
                     <button
-                        className="logout-button"
                         onClick={handleLogout}
+                        className="doctor-logout"
                     >
                         Logout
                     </button>
@@ -228,48 +196,44 @@ export default function PatientDashboard() {
 
 
             {/* =================================================
-                MAIN CONTENT
+                MAIN
             ================================================= */}
 
-            <main className="dashboard-main">
+            <main className="doctor-dashboard-main">
 
 
                 {/* =================================================
-                    WELCOME BANNER
+                    WELCOME
                 ================================================= */}
 
-                <section className="welcome-banner">
+                <section className="doctor-welcome">
 
-                    <div className="welcome-content">
+                    <div>
 
-                        <span className="welcome-tag">
-                            PATIENT DASHBOARD
+                        <span>
+                            DOCTOR DASHBOARD
                         </span>
 
                         <h1>
-                            Welcome back,{" "}
-                            <span>
-                                {patient.name}
-                            </span>
+                            Welcome, Dr. {doctor.name}
                         </h1>
 
                         <p>
-                            Manage your patient information,
-                            medical reports and QR identification
-                            from one secure place.
+                            Search patient records or scan a
+                            patient's QR code to access medical reports.
                         </p>
 
                     </div>
 
 
-                    <div className="patient-id-box">
+                    <div className="doctor-id-box">
 
-                        <span>
-                            Patient ID
-                        </span>
+                        <small>
+                            Doctor ID
+                        </small>
 
                         <strong>
-                            {patient.patientId}
+                            {doctor.doctorId}
                         </strong>
 
                     </div>
@@ -278,563 +242,147 @@ export default function PatientDashboard() {
 
 
                 {/* =================================================
-                    SUMMARY CARDS
+                    SEARCH + QR
                 ================================================= */}
 
-                <section className="summary-grid">
+                <section className="doctor-actions-grid">
 
 
-                    <div className="summary-card">
+                    {/* SEARCH */}
 
-                        <div className="summary-icon blue-icon">
-                            📄
+                    <div className="doctor-action-card">
+
+                        <div className="doctor-action-icon">
+                            🔎
                         </div>
 
-                        <div>
+                        <h2>
+                            Search Patient
+                        </h2>
 
-                            <span>
-                                Medical Reports
-                            </span>
+                        <p>
+                            Enter the patient's ID to view
+                            their medical record.
+                        </p>
 
-                            <strong>
-                                {reports.length}
-                            </strong>
 
-                        </div>
+                        <form onSubmit={searchPatient}>
+
+                            <input
+                                type="text"
+                                placeholder="Example: PAT1002"
+                                value={patientId}
+                                onChange={(e) =>
+                                    setPatientId(
+                                        e.target.value
+                                    )
+                                }
+                            />
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                            >
+
+                                {loading
+                                    ? "Searching..."
+                                    : "Search Patient"}
+
+                            </button>
+
+                        </form>
 
                     </div>
 
 
-                    <div className="summary-card">
+                    {/* QR */}
 
-                        <div className="summary-icon red-icon">
-                            🩸
+                    <div className="doctor-action-card qr-action">
+
+                        <div className="doctor-action-icon">
+                            📷
                         </div>
 
-                        <div>
+                        <h2>
+                            Scan Patient QR
+                        </h2>
 
-                            <span>
-                                Blood Group
-                            </span>
-
-                            <strong>
-                                {patient.bloodGroup || "N/A"}
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div className="summary-card">
-
-                        <div className="summary-icon purple-icon">
-                            ⚕
-                        </div>
-
-                        <div>
-
-                            <span>
-                                Gender
-                            </span>
-
-                            <strong>
-                                {patient.gender || "N/A"}
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div className="summary-card">
-
-                        <div className="summary-icon orange-icon">
-                            🎂
-                        </div>
-
-                        <div>
-
-                            <span>
-                                Age
-                            </span>
-
-                            <strong>
-                                {patient.age || "N/A"}
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-
-                {/* =================================================
-                    PROFILE + QR
-                ================================================= */}
-
-                <section className="main-card-grid">
-
-
-                    {/* =================================================
-                        PROFILE CARD
-                    ================================================= */}
-
-                    <div className="profile-card">
-
-                        <div className="section-header">
-
-                            <div>
-
-                                <h2>
-                                    Personal Information
-                                </h2>
-
-                                <p>
-                                    Your registered patient details
-                                </p>
-
-                            </div>
-
-                            <div className="section-icon">
-                                👤
-                            </div>
-
-                        </div>
-
-
-                        <div className="profile-details">
-
-
-                            <div className="profile-row">
-
-                                <span>
-                                    Full Name
-                                </span>
-
-                                <strong>
-                                    {patient.name}
-                                </strong>
-
-                            </div>
-
-
-                            <div className="profile-row">
-
-                                <span>
-                                    Email
-                                </span>
-
-                                <strong>
-                                    {patient.email}
-                                </strong>
-
-                            </div>
-
-
-                            <div className="profile-row">
-
-                                <span>
-                                    Phone
-                                </span>
-
-                                <strong>
-                                    {patient.phone || "Not provided"}
-                                </strong>
-
-                            </div>
-
-
-                            <div className="profile-row">
-
-                                <span>
-                                    Address
-                                </span>
-
-                                <strong>
-                                    {patient.address || "Not provided"}
-                                </strong>
-
-                            </div>
-
-
-                            <div className="profile-row">
-
-                                <span>
-                                    Patient ID
-                                </span>
-
-                                <strong>
-                                    {patient.patientId}
-                                </strong>
-
-                            </div>
-
-                        </div>
+                        <p>
+                            Scan the patient's QR code
+                            for quick record access.
+                        </p>
 
 
                         <Link
-                            to="/patient-profile"
-                            className="profile-link"
+                            to="/doctor-scan-qr"
+                            className="scan-patient-button"
                         >
-                            View Full Profile →
+                            Scan QR Code
                         </Link>
 
                     </div>
 
-
-                    {/* =================================================
-                        QR CARD
-                    ================================================= */}
-
-                    <div className="qr-card">
-
-                        <div className="section-header">
-
-                            <div>
-
-                                <h2>
-                                    Patient QR Code
-                                </h2>
-
-                                <p>
-                                    Quick patient identification
-                                </p>
-
-                            </div>
-
-                            <div className="section-icon">
-                                ▦
-                            </div>
-
-                        </div>
-
-
-                        <div className="qr-content">
-
-                            {patient.qrCode ? (
-
-                                <>
-
-                                    <div className="qr-image-container">
-
-                                        <img
-                                            src={patient.qrCode}
-                                            alt="Patient QR Code"
-                                        />
-
-                                    </div>
-
-
-                                    <div className="qr-patient-id">
-
-                                        {patient.patientId}
-
-                                    </div>
-
-
-                                    <p className="qr-help-text">
-
-                                        Show this QR code to authorized
-                                        hospital staff for quick identification.
-
-                                    </p>
-
-
-                                    <button
-                                        className="qr-open-button"
-                                        onClick={() => {
-
-                                            const newWindow =
-                                                window.open();
-
-                                            if (newWindow) {
-                                                newWindow.location.href =
-                                                    patient.qrCode;
-                                            }
-
-                                        }}
-                                    >
-                                        Open QR Code
-                                    </button>
-
-                                </>
-
-                            ) : (
-
-                                <div className="qr-empty">
-
-                                    <div className="qr-empty-icon">
-                                        ▦
-                                    </div>
-
-                                    <h3>
-                                        QR Code Unavailable
-                                    </h3>
-
-                                    <p>
-                                        Please logout and login again
-                                        to refresh your patient information.
-                                    </p>
-
-                                </div>
-
-                            )}
-
-                        </div>
-
-                    </div>
-
                 </section>
 
 
                 {/* =================================================
-                    QUICK ACTIONS
+                    FEATURES
                 ================================================= */}
 
-                <section className="actions-section">
+                <section className="doctor-features">
 
-                    <div className="section-title">
+                    <div className="feature-card">
 
-                        <h2>
-                            Quick Actions
-                        </h2>
+                        <div>
+                            👤
+                        </div>
+
+                        <h3>
+                            Patient Details
+                        </h3>
 
                         <p>
-                            Manage your medical records
+                            View patient information
+                            and medical history.
                         </p>
 
                     </div>
 
 
-                    <div className="actions-grid">
-
-
-                        <Link
-                            to="/upload-report"
-                            className="action-card"
-                        >
-
-                            <div className="action-card-icon upload-icon">
-                                ⬆
-                            </div>
-
-                            <div className="action-text">
-
-                                <h3>
-                                    Upload Report
-                                </h3>
-
-                                <p>
-                                    Add a new medical report
-                                </p>
-
-                            </div>
-
-                            <span className="action-arrow">
-                                →
-                            </span>
-
-                        </Link>
-
-
-                        <Link
-                            to="/my-reports"
-                            className="action-card"
-                        >
-
-                            <div className="action-card-icon report-icon">
-                                📄
-                            </div>
-
-                            <div className="action-text">
-
-                                <h3>
-                                    My Reports
-                                </h3>
-
-                                <p>
-                                    View your medical documents
-                                </p>
-
-                            </div>
-
-                            <span className="action-arrow">
-                                →
-                            </span>
-
-                        </Link>
-
-
-                        <Link
-                            to="/patient-profile"
-                            className="action-card"
-                        >
-
-                            <div className="action-card-icon profile-icon">
-                                👤
-                            </div>
-
-                            <div className="action-text">
-
-                                <h3>
-                                    My Profile
-                                </h3>
-
-                                <p>
-                                    View your personal details
-                                </p>
-
-                            </div>
-
-                            <span className="action-arrow">
-                                →
-                            </span>
-
-                        </Link>
-
-                    </div>
-
-                </section>
-
-
-                {/* =================================================
-                    RECENT REPORTS
-                ================================================= */}
-
-                <section className="recent-reports-card">
-
-                    <div className="recent-header">
+                    <div className="feature-card">
 
                         <div>
-
-                            <h2>
-                                Recent Medical Reports
-                            </h2>
-
-                            <p>
-                                Your latest uploaded documents
-                            </p>
-
+                            📄
                         </div>
 
+                        <h3>
+                            Medical Reports
+                        </h3>
 
-                        <Link
-                            to="/my-reports"
-                            className="view-all-link"
-                        >
-                            View All →
-                        </Link>
+                        <p>
+                            Access reports uploaded
+                            by the patient.
+                        </p>
 
                     </div>
 
 
-                    {loadingReports ? (
+                    <div className="feature-card">
 
-                        <div className="reports-loading">
-
-                            <div className="small-spinner"></div>
-
-                            <span>
-                                Loading reports...
-                            </span>
-
+                        <div>
+                            💊
                         </div>
 
-                    ) : reports.length === 0 ? (
+                        <h3>
+                            Prescription
+                        </h3>
 
-                        <div className="empty-reports">
+                        <p>
+                            Upload prescriptions for
+                            the selected patient.
+                        </p>
 
-                            <div className="empty-report-icon">
-                                📄
-                            </div>
-
-                            <h3>
-                                No Reports Uploaded
-                            </h3>
-
-                            <p>
-                                Your medical reports will appear here
-                                after you upload them.
-                            </p>
-
-                            <Link
-                                to="/upload-report"
-                                className="upload-first-button"
-                            >
-                                Upload Your First Report
-                            </Link>
-
-                        </div>
-
-                    ) : (
-
-                        <div className="report-list">
-
-                            {reports
-                                .slice(0, 5)
-                                .map((report) => (
-
-                                    <div
-                                        className="report-item"
-                                        key={report._id}
-                                    >
-
-                                        <div className="report-left">
-
-                                            <div className="report-file-icon">
-                                                📄
-                                            </div>
-
-                                            <div>
-
-                                                <h3>
-                                                    {report.reportName}
-                                                </h3>
-
-                                                <p>
-                                                    {report.reportType}
-                                                </p>
-
-                                            </div>
-
-                                        </div>
-
-
-                                        <div className="report-middle">
-
-                                            <span>
-                                                Uploaded
-                                            </span>
-
-                                            <strong>
-                                                {report.uploadedAt
-                                                    ? new Date(
-                                                        report.uploadedAt
-                                                    ).toLocaleDateString()
-                                                    : "N/A"}
-                                            </strong>
-
-                                        </div>
-
-
-                                        <button
-                                            className="view-report-button"
-                                            onClick={() =>
-                                                openReport(report)
-                                            }
-                                        >
-                                            View
-                                        </button>
-
-                                    </div>
-
-                                ))}
-
-                        </div>
-
-                    )}
+                    </div>
 
                 </section>
 
@@ -843,20 +391,18 @@ export default function PatientDashboard() {
                     FOOTER
                 ================================================= */}
 
-                <footer className="dashboard-footer">
+                <footer className="doctor-footer">
 
-                    <div>
-                        © 2026 Smart Hospital Report Management System
-                    </div>
-
-                    <div>
-                        Secure • Simple • Accessible
-                    </div>
+                    Smart Hospital Report Management System
+                    <span>
+                        Doctor Portal
+                    </span>
 
                 </footer>
 
             </main>
 
         </div>
+
     );
 }

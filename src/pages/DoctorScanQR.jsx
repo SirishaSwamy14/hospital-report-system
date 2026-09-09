@@ -9,72 +9,101 @@ export default function DoctorScanQR() {
 
     useEffect(() => {
 
-        const scanner = new Html5QrcodeScanner(
+        const scanner =
+            new Html5QrcodeScanner(
+                "reader",
+                {
+                    fps: 10,
+                    qrbox: {
+                        width: 250,
+                        height: 250
+                    }
+                },
+                false
+            );
 
-            "reader",
-
-            {
-                fps: 10,
-                qrbox: {
-                    width: 250,
-                    height: 250
-                }
-            },
-
-            false
-
-        );
 
         scanner.render(
 
             (decodedText) => {
 
-                scanner.clear();
+                console.log(
+                    "QR CODE SCANNED:",
+                    decodedText
+                );
 
-                // decodedText = PAT1007
 
-                navigate(`/doctor-patient/${decodedText}`);
+                const patientId =
+                    decodedText
+                        .trim()
+                        .toUpperCase();
+
+
+                scanner
+                    .clear()
+                    .catch(() => {});
+
+
+                // Open patient record
+                navigate(
+                    `/doctor-patient/${patientId}`
+                );
 
             },
 
-            (error) => {
-
-                // Ignore scan errors
-
+            () => {
+                // Ignore scanning errors
             }
 
         );
 
+
         return () => {
 
-            scanner.clear().catch(() => {});
+            scanner
+                .clear()
+                .catch(() => {});
 
         };
 
-    }, []);
+    }, [navigate]);
+
 
     return (
 
-        <div className="scan-container">
+        <div className="doctor-scan-page">
 
-            <div className="scan-box">
+            <div className="doctor-scan-card">
 
-                <h2>📷 Scan Patient QR Code</h2>
+                <div className="scan-top-icon">
+                    📷
+                </div>
+
+                <span className="scan-label">
+                    PATIENT IDENTIFICATION
+                </span>
+
+                <h1>
+                    Scan Patient QR Code
+                </h1>
 
                 <p>
-
-                    Place the patient's QR code in front of the camera.
-
+                    Place the patient's QR code
+                    inside the scanning area.
                 </p>
 
-                <div id="reader"></div>
 
-                <br />
+                <div
+                    id="reader"
+                    className="qr-reader"
+                ></div>
 
-                <Link to="/doctor-dashboard">
 
-                    ← Back to Dashboard
-
+                <Link
+                    to="/doctor-dashboard"
+                    className="scan-back-link"
+                >
+                    ← Back to Doctor Dashboard
                 </Link>
 
             </div>
@@ -82,5 +111,4 @@ export default function DoctorScanQR() {
         </div>
 
     );
-
 }
